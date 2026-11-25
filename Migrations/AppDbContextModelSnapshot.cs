@@ -34,6 +34,10 @@ namespace GGMSNEWPROJECT.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Location")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -48,7 +52,7 @@ namespace GGMSNEWPROJECT.Migrations
 
                     b.HasKey("Code");
 
-                    b.ToTable("Assets", (string)null);
+                    b.ToTable("Assets");
 
                     b.HasData(
                         new
@@ -57,6 +61,7 @@ namespace GGMSNEWPROJECT.Migrations
                             Brand = "Fortinet",
                             Category = "Firewall",
                             Client = "KLEEV",
+                            CompanyId = "ggms-oman",
                             Location = "Muscat HQ",
                             Status = "Warranty expiring",
                             Warranty = "2026-07-12"
@@ -67,6 +72,7 @@ namespace GGMSNEWPROJECT.Migrations
                             Brand = "Synology",
                             Category = "NAS",
                             Client = "Barka Poultry",
+                            CompanyId = "ggms-oman",
                             Location = "Barka Farm",
                             Status = "Warranty expiring",
                             Warranty = "2026-06-28"
@@ -77,6 +83,7 @@ namespace GGMSNEWPROJECT.Migrations
                             Brand = "Hikvision",
                             Category = "Access Control",
                             Client = "Salamander Oil & Gas",
+                            CompanyId = "ggms-oman",
                             Location = "Dammam Site",
                             Status = "Healthy",
                             Warranty = "2027-01-10"
@@ -87,6 +94,7 @@ namespace GGMSNEWPROJECT.Migrations
                             Brand = "Microsoft 365",
                             Category = "License",
                             Client = "Al Reem",
+                            CompanyId = "ggms-oman",
                             Location = "Cloud",
                             Status = "License expiring",
                             Warranty = "2026-06-30"
@@ -101,7 +109,23 @@ namespace GGMSNEWPROJECT.Migrations
                     b.Property<decimal>("Amount")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Due")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InvoiceDate")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InvoiceNumber")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReceiptUrl")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -113,34 +137,59 @@ namespace GGMSNEWPROJECT.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("SupplierVat")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Vat")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
-                    b.ToTable("Bills", (string)null);
+                    b.ToTable("Bills");
 
                     b.HasData(
                         new
                         {
                             Id = "BILL-771",
                             Amount = 134.10m,
+                            CompanyId = "ggms-oman",
                             Due = "2026-06-20",
+                            InvoiceDate = "",
+                            InvoiceNumber = "",
+                            ReceiptUrl = "",
                             Status = "To Pay",
-                            Supplier = "Muscat Technical Trading LLC"
+                            Supplier = "Muscat Technical Trading LLC",
+                            SupplierVat = "",
+                            Vat = 0m
                         },
                         new
                         {
                             Id = "BILL-774",
                             Amount = 690m,
+                            CompanyId = "ggms-oman",
                             Due = "2026-06-28",
+                            InvoiceDate = "",
+                            InvoiceNumber = "",
+                            ReceiptUrl = "",
                             Status = "To Pay",
-                            Supplier = "Oman Network Supplies"
+                            Supplier = "Oman Network Supplies",
+                            SupplierVat = "",
+                            Vat = 0m
                         },
                         new
                         {
                             Id = "BILL-779",
                             Amount = 420m,
+                            CompanyId = "ggms-oman",
                             Due = "2026-07-02",
+                            InvoiceDate = "",
+                            InvoiceNumber = "",
+                            ReceiptUrl = "",
                             Status = "Scheduled",
-                            Supplier = "Cloud License Distributor"
+                            Supplier = "Cloud License Distributor",
+                            SupplierVat = "",
+                            Vat = 0m
                         });
                 });
 
@@ -150,6 +199,18 @@ namespace GGMSNEWPROJECT.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContactPersonName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContactPersonNumber")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -174,87 +235,119 @@ namespace GGMSNEWPROJECT.Migrations
                     b.Property<int>("Profitability")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("VatNumber")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
-                    b.ToTable("Clients", (string)null);
+                    b.ToTable("Clients");
 
                     b.HasData(
                         new
                         {
                             Id = "kleev",
                             CompanyId = "ggms-oman",
+                            ContactPersonName = "John Operations",
+                            ContactPersonNumber = "+96899112233",
+                            Email = "info@kleev.com",
                             Industry = "Retail",
                             InvoicesDue = 2,
                             Name = "KLEEV",
                             Notes = "High-value managed IT account with firewall renewal due this quarter.",
                             OpenTasks = 8,
-                            Profitability = 34
+                            Profitability = 34,
+                            VatNumber = "OM110022334"
                         },
                         new
                         {
                             Id = "timberworks",
                             CompanyId = "ggms-oman",
+                            ContactPersonName = "Ahmed Procure",
+                            ContactPersonNumber = "+96899445566",
+                            Email = "procure@timberworks.com",
                             Industry = "Manufacturing",
                             InvoicesDue = 1,
                             Name = "Timberworks",
                             Notes = "AMC usage is above expected visit consumption. Watch margin.",
                             OpenTasks = 5,
-                            Profitability = 18
+                            Profitability = 18,
+                            VatNumber = "OM110022335"
                         },
                         new
                         {
                             Id = "salamander",
                             CompanyId = "ggms-oman",
+                            ContactPersonName = "Salim HSE",
+                            ContactPersonNumber = "+96899554433",
+                            Email = "security@salamander.com",
                             Industry = "Oil & Gas",
                             InvoicesDue = 0,
                             Name = "Salamander Oil & Gas",
                             Notes = "Security project on track, pending final site acceptance.",
                             OpenTasks = 4,
-                            Profitability = 41
+                            Profitability = 41,
+                            VatNumber = "OM110022337"
                         },
                         new
                         {
                             Id = "al-badea",
                             CompanyId = "ggms-oman",
+                            ContactPersonName = "Tariq Projects",
+                            ContactPersonNumber = "+96899887766",
+                            Email = "projects@albadea.com",
                             Industry = "Construction",
                             InvoicesDue = 3,
                             Name = "Al Badea National",
                             Notes = "Receivables need management attention.",
                             OpenTasks = 9,
-                            Profitability = 22
+                            Profitability = 22,
+                            VatNumber = "OM110022338"
                         },
                         new
                         {
                             Id = "oneroad",
                             CompanyId = "ggms-oman",
+                            ContactPersonName = "Mazin CEO Office",
+                            ContactPersonNumber = "+96899223344",
+                            Email = "ceo@oneroad.com",
                             Industry = "Logistics",
                             InvoicesDue = 1,
                             Name = "OneRoad Group",
                             Notes = "Website phase 2 proposal ready for follow-up.",
                             OpenTasks = 6,
-                            Profitability = 48
+                            Profitability = 48,
+                            VatNumber = "OM110022339"
                         },
                         new
                         {
                             Id = "barka",
                             CompanyId = "ggms-oman",
+                            ContactPersonName = "Said Maintenance",
+                            ContactPersonNumber = "+96899778899",
+                            Email = "contact@barkapoultry.com",
                             Industry = "Food Production",
                             InvoicesDue = 1,
                             Name = "Barka Poultry",
                             Notes = "Warranty expiry coming for UPS and NAS.",
                             OpenTasks = 3,
-                            Profitability = 29
+                            Profitability = 29,
+                            VatNumber = "OM110022336"
                         },
                         new
                         {
                             Id = "al-reem",
                             CompanyId = "ggms-oman",
+                            ContactPersonName = "Fatma Admin",
+                            ContactPersonNumber = "+971509988776",
+                            Email = "admin@alreem.ae",
                             Industry = "Real Estate",
                             InvoicesDue = 2,
                             Name = "Al Reem",
                             Notes = "HRMS payroll export configuration pending.",
                             OpenTasks = 11,
-                            Profitability = 37
+                            Profitability = 37,
+                            VatNumber = "OM110022340"
                         });
                 });
 
@@ -276,7 +369,7 @@ namespace GGMSNEWPROJECT.Migrations
 
                     b.HasIndex("ClientId");
 
-                    b.ToTable("ClientContacts", (string)null);
+                    b.ToTable("ClientContacts");
 
                     b.HasData(
                         new
@@ -365,7 +458,7 @@ namespace GGMSNEWPROJECT.Migrations
 
                     b.HasIndex("ClientId");
 
-                    b.ToTable("ClientLocations", (string)null);
+                    b.ToTable("ClientLocations");
 
                     b.HasData(
                         new
@@ -436,7 +529,7 @@ namespace GGMSNEWPROJECT.Migrations
 
                     b.HasIndex("ClientId");
 
-                    b.ToTable("ClientProjects", (string)null);
+                    b.ToTable("ClientProjects");
 
                     b.HasData(
                         new
@@ -494,12 +587,48 @@ namespace GGMSNEWPROJECT.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Address")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Branch")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContactNo")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Country")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CrNumber")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Currency")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CurrencyDecimals")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CurrencySymbol")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("DefaultVatRate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LogoUrl")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
@@ -513,38 +642,68 @@ namespace GGMSNEWPROJECT.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Website")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
-                    b.ToTable("Companies", (string)null);
+                    b.ToTable("Companies");
 
                     b.HasData(
                         new
                         {
                             Id = "ggms-oman",
+                            Address = "Building 42, Street 19, Al Khuwair, Muscat, Sultanate of Oman",
+                            Branch = "Muscat Main HQ",
+                            ContactNo = "+968 2449 0011",
                             Country = "Oman",
+                            CountryCode = "OM",
+                            CrNumber = "CR-1049281",
                             Currency = "OMR",
+                            CurrencyCode = "OMR",
+                            CurrencyDecimals = 3,
+                            CurrencySymbol = "OMR",
+                            DefaultVatRate = 5.0m,
+                            Email = "billing@ggms.om",
                             Name = "GGMS Global IT Solutions SPC",
                             Profit = 18420m,
-                            TaxNumber = "OM11023891"
-                        },
-                        new
-                        {
-                            Id = "pentagram-ksa",
-                            Country = "Saudi Arabia",
-                            Currency = "SAR",
-                            Name = "Pentagram",
-                            Profit = 276000m,
-                            TaxNumber = "SA310992883"
-                        },
-                        new
-                        {
-                            Id = "krativegrowth-uae",
-                            Country = "UAE",
-                            Currency = "AED",
-                            Name = "KrativeGrowth",
-                            Profit = 93500m,
-                            TaxNumber = "AE100557290"
+                            TaxNumber = "OM11023891",
+                            Website = "https://www.ggms.om"
                         });
+                });
+
+            modelBuilder.Entity("GGMSNEWPROJECT.Models.CostCentre", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Creator")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Department")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProfitCentreCode")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("CostCentres");
                 });
 
             modelBuilder.Entity("GGMSNEWPROJECT.Models.Credential", b =>
@@ -552,6 +711,10 @@ namespace GGMSNEWPROJECT.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -567,12 +730,13 @@ namespace GGMSNEWPROJECT.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Credentials", (string)null);
+                    b.ToTable("Credentials");
 
                     b.HasData(
                         new
                         {
                             Id = 1,
+                            CompanyId = "ggms-oman",
                             Name = "Firewall admin",
                             Password = "FortiPassword123!",
                             Username = "admin"
@@ -580,6 +744,7 @@ namespace GGMSNEWPROJECT.Migrations
                         new
                         {
                             Id = 2,
+                            CompanyId = "ggms-oman",
                             Name = "Microsoft 365 tenant",
                             Password = "M365TenantSecret!",
                             Username = "globaladmin@kleev.onmicrosoft.com"
@@ -587,6 +752,7 @@ namespace GGMSNEWPROJECT.Migrations
                         new
                         {
                             Id = 3,
+                            CompanyId = "ggms-oman",
                             Name = "CCTV NVR",
                             Password = "NvrPassword456!",
                             Username = "admin"
@@ -594,10 +760,52 @@ namespace GGMSNEWPROJECT.Migrations
                         new
                         {
                             Id = 4,
+                            CompanyId = "ggms-oman",
                             Name = "Cloud backup",
                             Password = "AzureStorageBackupKey789!",
                             Username = "backup_agent"
                         });
+                });
+
+            modelBuilder.Entity("GGMSNEWPROJECT.Models.CustomerPayment", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Customer")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InvoiceId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PaymentDate")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CustomerPayments");
                 });
 
             modelBuilder.Entity("GGMSNEWPROJECT.Models.Employee", b =>
@@ -606,6 +814,10 @@ namespace GGMSNEWPROJECT.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Bank")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompanyId")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -634,13 +846,14 @@ namespace GGMSNEWPROJECT.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Employees", (string)null);
+                    b.ToTable("Employees");
 
                     b.HasData(
                         new
                         {
                             Id = "EMP-001",
                             Bank = "Bank Muscat",
+                            CompanyId = "ggms-oman",
                             Department = "Operations",
                             Iban = "OM12BMUS000000001",
                             Name = "Abdullah",
@@ -652,6 +865,7 @@ namespace GGMSNEWPROJECT.Migrations
                         {
                             Id = "EMP-002",
                             Bank = "Sohar International",
+                            CompanyId = "ggms-oman",
                             Department = "Delivery",
                             Iban = "OM44SOIB000000002",
                             Name = "Rizwan",
@@ -663,6 +877,7 @@ namespace GGMSNEWPROJECT.Migrations
                         {
                             Id = "EMP-003",
                             Bank = "Bank Muscat",
+                            CompanyId = "ggms-oman",
                             Department = "Sales",
                             Iban = "Missing",
                             Name = "Sales Team",
@@ -674,6 +889,7 @@ namespace GGMSNEWPROJECT.Migrations
                         {
                             Id = "EMP-004",
                             Bank = "NBO",
+                            CompanyId = "ggms-oman",
                             Department = "Finance",
                             Iban = "OM77NBOB000000004",
                             Name = "Accounts",
@@ -685,6 +901,7 @@ namespace GGMSNEWPROJECT.Migrations
                         {
                             Id = "EMP-005",
                             Bank = "Bank Dhofar",
+                            CompanyId = "ggms-oman",
                             Department = "Delivery",
                             Iban = "OM55BDOF000000005",
                             Name = "Project Coordinator",
@@ -692,6 +909,204 @@ namespace GGMSNEWPROJECT.Migrations
                             Salary = 500m,
                             Status = "Active"
                         });
+                });
+
+            modelBuilder.Entity("GGMSNEWPROJECT.Models.EmployeeTask", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AssigneeId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AssigneeName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DueDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("EstimatedHours")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("LoggedHours")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReporterName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TaskType")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("EmployeeTasks");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "TSK-1001",
+                            AssigneeId = "EMP-001",
+                            AssigneeName = "Abdullah",
+                            CompanyId = "ggms-oman",
+                            CreatedAt = new DateTime(2026, 11, 22, 9, 14, 18, 918, DateTimeKind.Utc).AddTicks(4250),
+                            Description = "Setup outbound rules & VPN user access for KLEEV project site.",
+                            DueDate = new DateTime(2026, 11, 27, 9, 14, 18, 918, DateTimeKind.Utc).AddTicks(4250),
+                            EstimatedHours = 6m,
+                            LoggedHours = 4m,
+                            Priority = "High",
+                            ReporterName = "Rizwan",
+                            Status = "In Progress",
+                            TaskType = "Task",
+                            Title = "Configure Fortinet Firewall Policies"
+                        },
+                        new
+                        {
+                            Id = "TSK-1002",
+                            AssigneeId = "EMP-001",
+                            AssigneeName = "Abdullah",
+                            CompanyId = "ggms-oman",
+                            CompletedAt = new DateTime(2026, 11, 24, 9, 14, 18, 918, DateTimeKind.Utc).AddTicks(4260),
+                            CreatedAt = new DateTime(2026, 11, 20, 9, 14, 18, 918, DateTimeKind.Utc).AddTicks(4260),
+                            Description = "Conduct physical cabling check and test NVR channel feeds at Barka Poultry.",
+                            DueDate = new DateTime(2026, 11, 24, 9, 14, 18, 918, DateTimeKind.Utc).AddTicks(4260),
+                            EstimatedHours = 4m,
+                            LoggedHours = 4m,
+                            Priority = "Medium",
+                            ReporterName = "Rizwan",
+                            Status = "Completed",
+                            TaskType = "Maintenance",
+                            Title = "Inspect CCTV Camera Rack Connections"
+                        },
+                        new
+                        {
+                            Id = "TSK-1003",
+                            AssigneeId = "EMP-002",
+                            AssigneeName = "Rizwan",
+                            CompanyId = "ggms-oman",
+                            CreatedAt = new DateTime(2026, 11, 23, 9, 14, 18, 918, DateTimeKind.Utc).AddTicks(4270),
+                            Description = "Draft project timeline gantt chart & resource allocation for Timberworks project.",
+                            DueDate = new DateTime(2026, 11, 26, 9, 14, 18, 918, DateTimeKind.Utc).AddTicks(4270),
+                            EstimatedHours = 8m,
+                            LoggedHours = 5m,
+                            Priority = "Urgent",
+                            ReporterName = "Management",
+                            Status = "In Progress",
+                            TaskType = "Feature",
+                            Title = "Prepare Project Delivery Milestones"
+                        },
+                        new
+                        {
+                            Id = "TSK-1004",
+                            AssigneeId = "EMP-003",
+                            AssigneeName = "Sales Team",
+                            CompanyId = "ggms-oman",
+                            CreatedAt = new DateTime(2026, 11, 24, 9, 14, 18, 918, DateTimeKind.Utc).AddTicks(4280),
+                            Description = "Call OneRoad Group procurement manager for AMC proposal feedback.",
+                            DueDate = new DateTime(2026, 11, 28, 9, 14, 18, 918, DateTimeKind.Utc).AddTicks(4280),
+                            EstimatedHours = 3m,
+                            LoggedHours = 0m,
+                            Priority = "High",
+                            ReporterName = "Management",
+                            Status = "To Do",
+                            TaskType = "Task",
+                            Title = "Client Sales Pitch Follow-up"
+                        },
+                        new
+                        {
+                            Id = "TSK-1005",
+                            AssigneeId = "EMP-004",
+                            AssigneeName = "Accounts",
+                            CompanyId = "ggms-oman",
+                            CreatedAt = new DateTime(2026, 11, 21, 9, 14, 18, 918, DateTimeKind.Utc).AddTicks(4280),
+                            Description = "Perform bank statement matching against overdue customer payments.",
+                            DueDate = new DateTime(2026, 11, 27, 9, 14, 18, 918, DateTimeKind.Utc).AddTicks(4290),
+                            EstimatedHours = 5m,
+                            LoggedHours = 4m,
+                            Priority = "Medium",
+                            ReporterName = "Management",
+                            Status = "In Review",
+                            TaskType = "Task",
+                            Title = "Reconcile Outstanding Invoices for Q2"
+                        },
+                        new
+                        {
+                            Id = "TSK-1006",
+                            AssigneeId = "EMP-005",
+                            AssigneeName = "Project Coordinator",
+                            CompanyId = "ggms-oman",
+                            CreatedAt = new DateTime(2026, 11, 24, 9, 14, 18, 918, DateTimeKind.Utc).AddTicks(4290),
+                            Description = "Provision 25 user licenses and sync domain MX records for Al Reem.",
+                            DueDate = new DateTime(2026, 11, 29, 9, 14, 18, 918, DateTimeKind.Utc).AddTicks(4290),
+                            EstimatedHours = 4m,
+                            LoggedHours = 0m,
+                            Priority = "Low",
+                            ReporterName = "Rizwan",
+                            Status = "To Do",
+                            TaskType = "Task",
+                            Title = "Setup M365 Business Basic Users"
+                        });
+                });
+
+            modelBuilder.Entity("GGMSNEWPROJECT.Models.EntryType", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Creator")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Editor")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("EntryTypes");
                 });
 
             modelBuilder.Entity("GGMSNEWPROJECT.Models.Expense", b =>
@@ -734,7 +1149,7 @@ namespace GGMSNEWPROJECT.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Expenses", (string)null);
+                    b.ToTable("Expenses");
 
                     b.HasData(
                         new
@@ -799,11 +1214,30 @@ namespace GGMSNEWPROJECT.Migrations
                     b.Property<decimal>("Amount")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Customer")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal>("Discount")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Due")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ItemsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Salesperson")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -811,35 +1245,162 @@ namespace GGMSNEWPROJECT.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("TermsAndConditions")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Vat")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
-                    b.ToTable("Invoices", (string)null);
+                    b.ToTable("Invoices");
 
                     b.HasData(
                         new
                         {
                             Id = "INV-3028",
                             Amount = 1850m,
+                            CompanyId = "ggms-oman",
                             Customer = "KLEEV",
+                            Discount = 0m,
                             Due = "2026-06-18",
-                            Status = "Overdue"
+                            ItemsJson = "[]",
+                            Notes = "",
+                            Salesperson = "",
+                            Status = "Overdue",
+                            TermsAndConditions = "",
+                            Vat = 0m
                         },
                         new
                         {
                             Id = "INV-3031",
                             Amount = 4200m,
+                            CompanyId = "ggms-oman",
                             Customer = "Timberworks",
+                            Discount = 0m,
                             Due = "2026-06-25",
-                            Status = "Due"
+                            ItemsJson = "[]",
+                            Notes = "",
+                            Salesperson = "",
+                            Status = "Due",
+                            TermsAndConditions = "",
+                            Vat = 0m
                         },
                         new
                         {
                             Id = "INV-3036",
                             Amount = 8925m,
+                            CompanyId = "ggms-oman",
                             Customer = "Barka Poultry",
+                            Discount = 0m,
                             Due = "2026-07-05",
-                            Status = "Open"
+                            ItemsJson = "[]",
+                            Notes = "",
+                            Salesperson = "",
+                            Status = "Open",
+                            TermsAndConditions = "",
+                            Vat = 0m
                         });
+                });
+
+            modelBuilder.Entity("GGMSNEWPROJECT.Models.JournalEntry", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AttachmentUrl")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Creator")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Datetime")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EntryTypeCode")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EntryTypeName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FiscalYear")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("TotalCredit")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("TotalDebit")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("JournalEntries");
+                });
+
+            modelBuilder.Entity("GGMSNEWPROJECT.Models.JournalEntryLine", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CostCentreCode")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Credit")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Debit")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("JournalEntryId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LedgerCode")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LedgerName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProfitCentreCode")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JournalEntryId");
+
+                    b.ToTable("JournalEntryLines");
                 });
 
             modelBuilder.Entity("GGMSNEWPROJECT.Models.Lead", b =>
@@ -880,7 +1441,7 @@ namespace GGMSNEWPROJECT.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Leads", (string)null);
+                    b.ToTable("Leads");
 
                     b.HasData(
                         new
@@ -933,9 +1494,122 @@ namespace GGMSNEWPROJECT.Migrations
                         });
                 });
 
+            modelBuilder.Entity("GGMSNEWPROJECT.Models.Ledger", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Class")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsRetainedEarnings")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ParentCode")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("Ledgers");
+                });
+
+            modelBuilder.Entity("GGMSNEWPROJECT.Models.ProductGroup", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("VatPercentage")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ProductGroups");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CompanyId = "ggms-oman",
+                            Name = "CCTV",
+                            VatPercentage = 5.0m
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CompanyId = "ggms-oman",
+                            Name = "Storage",
+                            VatPercentage = 5.0m
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CompanyId = "ggms-oman",
+                            Name = "Cable",
+                            VatPercentage = 5.0m
+                        },
+                        new
+                        {
+                            Id = 4,
+                            CompanyId = "ggms-oman",
+                            Name = "IT Service",
+                            VatPercentage = 5.0m
+                        },
+                        new
+                        {
+                            Id = 5,
+                            CompanyId = "ggms-oman",
+                            Name = "AMC",
+                            VatPercentage = 5.0m
+                        },
+                        new
+                        {
+                            Id = 6,
+                            CompanyId = "ggms-oman",
+                            Name = "Software",
+                            VatPercentage = 5.0m
+                        },
+                        new
+                        {
+                            Id = 7,
+                            CompanyId = "ggms-oman",
+                            Name = "Exempt Items",
+                            VatPercentage = 0.0m
+                        });
+                });
+
             modelBuilder.Entity("GGMSNEWPROJECT.Models.ProductItem", b =>
                 {
                     b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Barcode")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("BuyPrice")
@@ -956,6 +1630,9 @@ namespace GGMSNEWPROJECT.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("ProductGroupId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<decimal>("SellPrice")
                         .HasColumnType("TEXT");
 
@@ -966,108 +1643,163 @@ namespace GGMSNEWPROJECT.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Uom")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<decimal>("VatRate")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
-                    b.ToTable("ProductItems", (string)null);
+                    b.ToTable("ProductItems");
 
                     b.HasData(
                         new
                         {
                             Id = "ITM-001",
+                            Barcode = "008562011991",
                             BuyPrice = 28m,
                             Category = "CCTV",
                             CompanyId = "ggms-oman",
                             MinStock = 5,
                             Name = "Hikvision 4MP IP Camera",
+                            ProductGroupId = 1,
                             SellPrice = 48m,
                             Stock = 12,
                             Type = "Product",
+                            Uom = "Pcs",
                             VatRate = 0.05m
                         },
                         new
                         {
                             Id = "ITM-002",
+                            Barcode = "181800007719",
                             BuyPrice = 85m,
                             Category = "CCTV",
                             CompanyId = "ggms-oman",
                             MinStock = 2,
                             Name = "8 Channel NVR",
+                            ProductGroupId = 1,
                             SellPrice = 135m,
                             Stock = 4,
                             Type = "Product",
+                            Uom = "Pcs",
                             VatRate = 0.05m
                         },
                         new
                         {
                             Id = "ITM-003",
+                            Barcode = "209918273645",
                             BuyPrice = 22m,
                             Category = "Storage",
                             CompanyId = "ggms-oman",
                             MinStock = 4,
                             Name = "1TB Surveillance HDD",
+                            ProductGroupId = 2,
                             SellPrice = 38m,
                             Stock = 8,
                             Type = "Product",
+                            Uom = "Pcs",
                             VatRate = 0.05m
                         },
                         new
                         {
                             Id = "ITM-004",
+                            Barcode = "301928374650",
                             BuyPrice = 32m,
                             Category = "Cable",
                             CompanyId = "ggms-oman",
                             MinStock = 4,
                             Name = "Cat6 Cable Box",
+                            ProductGroupId = 3,
                             SellPrice = 55m,
                             Stock = 3,
                             Type = "Product",
+                            Uom = "Box",
                             VatRate = 0.05m
                         },
                         new
                         {
                             Id = "ITM-005",
+                            Barcode = "402837465019",
                             BuyPrice = 0m,
                             Category = "IT Service",
                             CompanyId = "ggms-oman",
                             MinStock = 0,
                             Name = "Firewall Configuration Service",
+                            ProductGroupId = 4,
                             SellPrice = 180m,
                             Stock = 0,
                             Type = "Service",
+                            Uom = "Set",
                             VatRate = 0.05m
                         },
                         new
                         {
                             Id = "ITM-006",
+                            Barcode = "503746501928",
                             BuyPrice = 120m,
                             Category = "AMC",
                             CompanyId = "ggms-oman",
                             MinStock = 0,
                             Name = "IT AMC Monthly Plan",
+                            ProductGroupId = 5,
                             SellPrice = 320m,
                             Stock = 0,
                             Type = "AMC",
+                            Uom = "Set",
                             VatRate = 0.05m
                         },
                         new
                         {
                             Id = "ITM-007",
+                            Barcode = "604650192837",
                             BuyPrice = 2.4m,
                             Category = "Software",
                             CompanyId = "ggms-oman",
                             MinStock = 10,
                             Name = "Microsoft 365 Business Basic",
+                            ProductGroupId = 6,
                             SellPrice = 3.5m,
                             Stock = 25,
                             Type = "License",
+                            Uom = "Pcs",
                             VatRate = 0.05m
                         });
                 });
 
-            modelBuilder.Entity("GGMSNEWPROJECT.Models.Quotation", b =>
+            modelBuilder.Entity("GGMSNEWPROJECT.Models.ProfitCentre", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("BusinessUnit")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Creator")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("ProfitCentres");
+                });
+
+            modelBuilder.Entity("GGMSNEWPROJECT.Models.PurchaseEnquiry", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("TEXT");
@@ -1075,19 +1807,43 @@ namespace GGMSNEWPROJECT.Migrations
                     b.Property<decimal>("Amount")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Customer")
+                    b.Property<string>("CompanyId")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Expires")
+                    b.Property<string>("Date")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("LastFollowUp")
+                    b.Property<string>("ItemsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PurchaseOrderId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Remarks")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Salesperson")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SupplierName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TermsAndConditions")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -1100,17 +1856,151 @@ namespace GGMSNEWPROJECT.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Quotations", (string)null);
+                    b.ToTable("PurchaseEnquiries");
+                });
+
+            modelBuilder.Entity("GGMSNEWPROJECT.Models.PurchaseOrder", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("GrossAmount")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ItemsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("NetAmount")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OrderDate")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PurchaseEnquiryId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PurchaseOrderNo")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Remarks")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SupplierEmail")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SupplierName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TermsAndConditions")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("VatAmount")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PurchaseOrders");
+                });
+
+            modelBuilder.Entity("GGMSNEWPROJECT.Models.Quotation", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Customer")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Discount")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Expires")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ItemsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastFollowUp")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Salesperson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TermsAndConditions")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Vat")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Quotations");
 
                     b.HasData(
                         new
                         {
                             Id = "QT-OM-2201",
                             Amount = 9800m,
+                            CompanyId = "ggms-oman",
                             Customer = "KLEEV",
+                            Discount = 0m,
                             Expires = "2026-06-28",
+                            ItemsJson = "[]",
                             LastFollowUp = "1 day ago",
+                            Notes = "",
+                            Salesperson = "",
                             Status = "Sent",
+                            TermsAndConditions = "",
                             Title = "IT AMC",
                             Vat = 490m
                         },
@@ -1118,10 +2008,16 @@ namespace GGMSNEWPROJECT.Migrations
                         {
                             Id = "QT-OM-2202",
                             Amount = 8500m,
+                            CompanyId = "ggms-oman",
                             Customer = "Barka Poultry",
+                            Discount = 0m,
                             Expires = "2026-07-05",
+                            ItemsJson = "[]",
                             LastFollowUp = "Today",
+                            Notes = "",
+                            Salesperson = "",
                             Status = "Approved",
+                            TermsAndConditions = "",
                             Title = "Server & Firewall Setup",
                             Vat = 425m
                         },
@@ -1129,10 +2025,16 @@ namespace GGMSNEWPROJECT.Migrations
                         {
                             Id = "QT-OM-2203",
                             Amount = 4200m,
+                            CompanyId = "ggms-oman",
                             Customer = "Timberworks",
+                            Discount = 0m,
                             Expires = "2026-06-08",
+                            ItemsJson = "[]",
                             LastFollowUp = "6 days ago",
+                            Notes = "",
+                            Salesperson = "",
                             Status = "Expired",
+                            TermsAndConditions = "",
                             Title = "CCTV AMC Support",
                             Vat = 210m
                         },
@@ -1140,10 +2042,16 @@ namespace GGMSNEWPROJECT.Migrations
                         {
                             Id = "QT-OM-2204",
                             Amount = 3100m,
+                            CompanyId = "ggms-oman",
                             Customer = "KLEEV",
+                            Discount = 0m,
                             Expires = "2026-07-12",
+                            ItemsJson = "[]",
                             LastFollowUp = "Not sent",
+                            Notes = "",
+                            Salesperson = "",
                             Status = "Draft",
+                            TermsAndConditions = "",
                             Title = "Microsoft 365 migration",
                             Vat = 155m
                         });
@@ -1156,6 +2064,10 @@ namespace GGMSNEWPROJECT.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Client")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompanyId")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -1179,13 +2091,14 @@ namespace GGMSNEWPROJECT.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Renewals", (string)null);
+                    b.ToTable("Renewals");
 
                     b.HasData(
                         new
                         {
                             Id = 1,
                             Client = "KLEEV",
+                            CompanyId = "ggms-oman",
                             Due = "2026-06-25",
                             Margin = 42,
                             Status = "Due 15 days",
@@ -1196,6 +2109,7 @@ namespace GGMSNEWPROJECT.Migrations
                         {
                             Id = 2,
                             Client = "Timberworks",
+                            CompanyId = "ggms-oman",
                             Due = "2026-07-09",
                             Margin = 16,
                             Status = "Due 30 days",
@@ -1206,6 +2120,7 @@ namespace GGMSNEWPROJECT.Migrations
                         {
                             Id = 3,
                             Client = "OneRoad Group",
+                            CompanyId = "ggms-oman",
                             Due = "2026-08-15",
                             Margin = 55,
                             Status = "Due 60 days",
@@ -1216,6 +2131,7 @@ namespace GGMSNEWPROJECT.Migrations
                         {
                             Id = 4,
                             Client = "Al Reem",
+                            CompanyId = "ggms-oman",
                             Due = "2026-06-18",
                             Margin = 38,
                             Status = "Due 15 days",
@@ -1224,11 +2140,148 @@ namespace GGMSNEWPROJECT.Migrations
                         });
                 });
 
+            modelBuilder.Entity("GGMSNEWPROJECT.Models.Supplier", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ActiveOrders")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("BillsDue")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContactPersonName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContactPersonNumber")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("VatNumber")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Suppliers");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "muscat-tech",
+                            ActiveOrders = 2,
+                            BillsDue = 1,
+                            Category = "IT Hardware",
+                            CompanyId = "ggms-oman",
+                            ContactPersonName = "Salim Sales",
+                            ContactPersonNumber = "+96899221100",
+                            Email = "sales@muscattech.om",
+                            Name = "Muscat Technical Trading LLC",
+                            Notes = "Local distributor for network switches and cabling accessories.",
+                            VatNumber = "OM550099881"
+                        },
+                        new
+                        {
+                            Id = "oman-net",
+                            ActiveOrders = 1,
+                            BillsDue = 1,
+                            Category = "Cabling",
+                            CompanyId = "ggms-oman",
+                            ContactPersonName = "Fatma Support",
+                            ContactPersonNumber = "+96899334455",
+                            Email = "support@omannet.om",
+                            Name = "Oman Network Supplies",
+                            Notes = "Main supplier for Cat6 box and fiber patch panels.",
+                            VatNumber = "OM550099882"
+                        },
+                        new
+                        {
+                            Id = "cloud-lic",
+                            ActiveOrders = 3,
+                            BillsDue = 1,
+                            Category = "Software",
+                            CompanyId = "ggms-oman",
+                            ContactPersonName = "George Billing",
+                            ContactPersonNumber = "+971501234567",
+                            Email = "billing@cloudlic.com",
+                            Name = "Cloud License Distributor",
+                            Notes = "Microsoft 365 and cloud subscription provider.",
+                            VatNumber = "OM550099883"
+                        });
+                });
+
+            modelBuilder.Entity("GGMSNEWPROJECT.Models.SupplierPayment", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("BillId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PaymentDate")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Supplier")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SupplierPayments");
+                });
+
             modelBuilder.Entity("GGMSNEWPROJECT.Models.TimelineEvent", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Message")
                         .IsRequired()
@@ -1239,32 +2292,103 @@ namespace GGMSNEWPROJECT.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TimelineEvents", (string)null);
+                    b.ToTable("TimelineEvents");
 
                     b.HasData(
                         new
                         {
                             Id = 1,
+                            CompanyId = "ggms-oman",
                             Message = "AI identified 3 low-margin jobs needing review.",
-                            Timestamp = new DateTime(2026, 7, 6, 0, 16, 7, 38, DateTimeKind.Local).AddTicks(9760)
+                            Timestamp = new DateTime(2026, 11, 24, 14, 44, 18, 918, DateTimeKind.Local).AddTicks(4120)
                         },
                         new
                         {
                             Id = 2,
+                            CompanyId = "ggms-oman",
                             Message = "KLEEV firewall renewal is due within 15 days.",
-                            Timestamp = new DateTime(2026, 7, 6, 12, 16, 7, 38, DateTimeKind.Local).AddTicks(9810)
+                            Timestamp = new DateTime(2026, 11, 25, 2, 44, 18, 918, DateTimeKind.Local).AddTicks(4190)
                         },
                         new
                         {
                             Id = 3,
+                            CompanyId = "ggms-oman",
                             Message = "Accounts marked 8 invoices as overdue.",
-                            Timestamp = new DateTime(2026, 7, 6, 20, 16, 7, 38, DateTimeKind.Local).AddTicks(9810)
+                            Timestamp = new DateTime(2026, 11, 25, 10, 44, 18, 918, DateTimeKind.Local).AddTicks(4190)
                         },
                         new
                         {
                             Id = 4,
+                            CompanyId = "ggms-oman",
                             Message = "Engineer uploaded site photos for CCTV AMC visit.",
-                            Timestamp = new DateTime(2026, 7, 6, 23, 16, 7, 38, DateTimeKind.Local).AddTicks(9820)
+                            Timestamp = new DateTime(2026, 11, 25, 13, 44, 18, 918, DateTimeKind.Local).AddTicks(4200)
+                        });
+                });
+
+            modelBuilder.Entity("GGMSNEWPROJECT.Models.Uom", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Uoms");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CompanyId = "ggms-oman",
+                            Description = "Pieces",
+                            Name = "Pcs"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CompanyId = "ggms-oman",
+                            Description = "Meters",
+                            Name = "Meter"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CompanyId = "ggms-oman",
+                            Description = "Boxes",
+                            Name = "Box"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            CompanyId = "ggms-oman",
+                            Description = "Kilograms",
+                            Name = "Kg"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            CompanyId = "ggms-oman",
+                            Description = "Sets",
+                            Name = "Set"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            CompanyId = "ggms-oman",
+                            Description = "Rolls",
+                            Name = "Roll"
                         });
                 });
 
@@ -1273,6 +2397,14 @@ namespace GGMSNEWPROJECT.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("AllowedCompanyIds")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
@@ -1287,6 +2419,10 @@ namespace GGMSNEWPROJECT.Migrations
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -1297,25 +2433,31 @@ namespace GGMSNEWPROJECT.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
 
                     b.HasData(
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 7, 7, 0, 16, 7, 38, DateTimeKind.Local).AddTicks(9850),
+                            AllowedCompanyIds = "ggms-oman,ggms-uae",
+                            CompanyId = "ggms-oman",
+                            CreatedAt = new DateTime(2026, 11, 25, 14, 44, 18, 918, DateTimeKind.Local).AddTicks(4340),
                             Email = "md@ggms.ai",
                             IsActive = true,
-                            PasswordHash = "$2a$11$lm/f.xn1hW5F0TQYy.Q/peSzCQsWdOEkFB6GJcVfQmr.a3JhKM9Wa",
+                            Name = "",
+                            PasswordHash = "$2a$11$wCDVEmvOxkEpHvDf5Uaxg.MA.qmxLQ3hO50RxRdp5e50h1ZHi9vAa",
                             Role = "Admin"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 7, 7, 0, 16, 7, 38, DateTimeKind.Local).AddTicks(9860),
+                            AllowedCompanyIds = "ggms-oman,ggms-uae",
+                            CompanyId = "ggms-oman",
+                            CreatedAt = new DateTime(2026, 11, 25, 14, 44, 18, 918, DateTimeKind.Local).AddTicks(4350),
                             Email = "user@ggms.ai",
                             IsActive = true,
-                            PasswordHash = "$2a$11$lm/f.xn1hW5F0TQYy.Q/peSzCQsWdOEkFB6GJcVfQmr.a3JhKM9Wa",
+                            Name = "",
+                            PasswordHash = "$2a$11$wCDVEmvOxkEpHvDf5Uaxg.MA.qmxLQ3hO50RxRdp5e50h1ZHi9vAa",
                             Role = "User"
                         });
                 });
@@ -1347,6 +2489,15 @@ namespace GGMSNEWPROJECT.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("GGMSNEWPROJECT.Models.JournalEntryLine", b =>
+                {
+                    b.HasOne("GGMSNEWPROJECT.Models.JournalEntry", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("JournalEntryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("GGMSNEWPROJECT.Models.Client", b =>
                 {
                     b.Navigation("Contacts");
@@ -1354,6 +2505,11 @@ namespace GGMSNEWPROJECT.Migrations
                     b.Navigation("Locations");
 
                     b.Navigation("Projects");
+                });
+
+            modelBuilder.Entity("GGMSNEWPROJECT.Models.JournalEntry", b =>
+                {
+                    b.Navigation("Lines");
                 });
 #pragma warning restore 612, 618
         }

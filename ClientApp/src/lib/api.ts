@@ -22,13 +22,18 @@ export async function apiFetch<T>(endpoint: string, options?: RequestInit): Prom
     }
   }
 
+  const isFormData = typeof FormData !== "undefined" && options?.body instanceof FormData;
+  const headers = new Headers(options?.headers);
+  headers.set("X-Company-ID", activeCompanyId);
+  if (isFormData) {
+    headers.delete("Content-Type");
+  } else {
+    headers.set("Content-Type", "application/json");
+  }
+
   const response = await fetch(url, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      "X-Company-ID": activeCompanyId,
-      ...options?.headers,
-    },
+    headers,
   });
 
   if (!response.ok) {

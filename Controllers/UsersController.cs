@@ -25,6 +25,7 @@ namespace GGMSNEWPROJECT.Controllers
                 .OrderByDescending(u => u.CreatedAt)
                 .Select(u => new {
                     u.Id,
+                    u.Name,
                     u.Email,
                     u.Role,
                     u.CompanyId,
@@ -40,6 +41,7 @@ namespace GGMSNEWPROJECT.Controllers
 
         public class CreateUserDto
         {
+            public string Name { get; set; } = string.Empty;
             public string Email { get; set; } = string.Empty;
             public string Password { get; set; } = string.Empty;
             public string Role { get; set; } = "User";
@@ -51,9 +53,9 @@ namespace GGMSNEWPROJECT.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
+            if (string.IsNullOrWhiteSpace(dto.Name) || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
             {
-                return BadRequest(new { message = "Email and password are required" });
+                return BadRequest(new { message = "Name, email, and password are required" });
             }
 
             var existing = await _context.Users.AnyAsync(u => u.Email == dto.Email);
@@ -64,6 +66,7 @@ namespace GGMSNEWPROJECT.Controllers
 
             var user = new User
             {
+                Name = dto.Name.Trim(),
                 Email = dto.Email,
                 PasswordHash = BC.HashPassword(dto.Password),
                 Role = dto.Role,
@@ -78,6 +81,7 @@ namespace GGMSNEWPROJECT.Controllers
 
             return Ok(new {
                 user.Id,
+                user.Name,
                 user.Email,
                 user.Role,
                 user.CompanyId,
@@ -97,6 +101,11 @@ namespace GGMSNEWPROJECT.Controllers
             }
 
             user.Email = dto.Email;
+            if (string.IsNullOrWhiteSpace(dto.Name))
+            {
+                return BadRequest(new { message = "Name is required" });
+            }
+            user.Name = dto.Name.Trim();
             user.Role = dto.Role;
             if (!string.IsNullOrWhiteSpace(dto.CompanyId)) user.CompanyId = dto.CompanyId;
             if (!string.IsNullOrWhiteSpace(dto.AllowedCompanyIds)) user.AllowedCompanyIds = dto.AllowedCompanyIds;
@@ -111,6 +120,7 @@ namespace GGMSNEWPROJECT.Controllers
 
             return Ok(new {
                 user.Id,
+                user.Name,
                 user.Email,
                 user.Role,
                 user.IsActive,

@@ -192,5 +192,25 @@ namespace GGMSNEWPROJECT.Controllers
             await _context.SaveChangesAsync();
             return Ok(invoice);
         }
+
+        [HttpPut("{id}/status")]
+        public async Task<IActionResult> UpdateStatus(string id, [FromBody] string status)
+        {
+            var invoice = await _context.Invoices.FirstOrDefaultAsync(item => item.Id == id);
+            if (invoice == null)
+            {
+                return NotFound(new { message = $"Invoice {id} was not found." });
+            }
+
+            var allowedStatuses = new[] { "Draft", "Sent", "Partially Paid", "Paid", "Overdue", "Cancelled", "Void" };
+            if (!allowedStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
+            {
+                return BadRequest("Invalid invoice status.");
+            }
+
+            invoice.Status = status;
+            await _context.SaveChangesAsync();
+            return Ok(invoice);
+        }
     }
 }

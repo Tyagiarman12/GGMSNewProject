@@ -37,7 +37,6 @@ import {
   ProjectProfitTable,
   RenewalCard,
   UploadDropzone,
-  VatScannerCard
 } from "../components/command-center";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -49,7 +48,6 @@ import {
   controlTower,
   projects,
   renewals,
-  vatScanResult,
   type Company
 } from "../data/mock";
 import type {
@@ -69,6 +67,9 @@ import { money, percent } from "../lib/utils";
 import { LoginPage } from "../modules/auth/login-page";
 import { ClientsPage } from "../modules/clients/clients-page";
 import { FinanceEntitiesPage } from "../modules/finance/finance-entities-page";
+import { ExpensesPage } from "../modules/finance/expenses-page";
+import { FinanceFlowPage } from "../modules/finance/finance-flow-page";
+import { VatBillScannerPage } from "../modules/finance/vat-bill-scanner-page";
 import { HrPage } from "../modules/hr/hr-page";
 import { EmployeePerformancePage } from "../modules/hr/employee-performance-page";
 import { InventoryPage } from "../modules/inventory/inventory-page";
@@ -354,7 +355,7 @@ function AppView({
   if (activePage === "inventory") return <InventoryPage activeCompany={activeCompany} products={productItems} setProducts={setProductItems} />;
   if (activePage === "invoice-builder") return <InvoiceBuilderPage activeCompany={activeCompany} products={productItems} setProducts={setProductItems} invoiceLines={invoiceLines} setInvoiceLines={setInvoiceLines} initialQuotationId={selectedQuotationId} />;
   if (activePage === "sales-flow") return <SalesWorkflow activeCompany={activeCompany} />;
-  if (activePage === "finance-flow") return <FinanceWorkflow activeCompany={activeCompany} />;
+  if (activePage === "finance-flow") return <FinanceFlowPage activeCompany={activeCompany} />;
   if (activePage === "finance-entities") return <FinanceEntitiesPage activeCompany={activeCompany} initialTab="ledgers" />;
   if (activePage === "finance-ledgers") return <FinanceEntitiesPage activeCompany={activeCompany} initialTab="ledgers" />;
   if (activePage === "finance-entry-types") return <FinanceEntitiesPage activeCompany={activeCompany} initialTab="entry-types" />;
@@ -367,8 +368,8 @@ function AppView({
 
   if (activePage === "client-room") return <ClientRoom client={selectedClient} />;
   if (activePage === "ai-capture") return <AiCapture />;
-  if (activePage === "vat-scanner") return <VatScanner activeCompany={activeCompany} />;
-  if (activePage === "expenses") return <ExpensesPanel />;
+  if (activePage === "vat-scanner") return <VatBillScannerPage activeCompany={activeCompany} />;
+  if (activePage === "expenses") return <ExpensesPage activeCompany={activeCompany} />;
   if (activePage === "renewals") return <RenewalsPanel />;
   if (activePage === "assets") return <AssetsPanel />;
   if (activePage === "employees") return <EmployeePerformancePage activeCompany={activeCompany} />;
@@ -1110,43 +1111,6 @@ function CredentialVault() {
         ))}
       </CardContent>
     </Card>
-  );
-}
-
-function VatScanner({ activeCompany }: { activeCompany: Company }) {
-  return <VatScannerCard scan={{ ...vatScanResult, currency: activeCompany.currency }} />;
-}
-
-function ExpensesPanel() {
-  const [expenseList, setExpenseList] = useState<any[]>([]);
-
-  useEffect(() => {
-    let active = true;
-    apiFetch<any[]>("api/Expenses")
-      .then((data) => {
-        if (active) {
-          setExpenseList(data);
-        }
-      })
-      .catch((err) => {
-        console.error("Error fetching expenses:", err);
-      });
-    return () => { active = false; };
-  }, []);
-
-  return (
-    <DataTable title="Expenses & Petty Cash" action="New expense">
-      <thead><tr><Th>ID</Th><Th>Date</Th><Th>Category</Th><Th>Project</Th><Th>Amount</Th><Th>Receipt</Th><Th>Status</Th></tr></thead>
-      <tbody>
-        {expenseList.map((expense) => (
-          <tr key={expense.id}>
-            <Td>{expense.id}</Td><Td>{expense.date}</Td><Td>{expense.category}</Td><Td>{expense.project}</Td><Td>{money(expense.amount)}</Td>
-            <Td>{expense.receipt ? <Badge variant="success">Attached</Badge> : <Badge variant="danger">Missing</Badge>}</Td>
-            <Td><Badge variant={expense.status === "Approved" ? "success" : expense.status === "Rejected" ? "danger" : "warning"}>{expense.status}</Badge></Td>
-          </tr>
-        ))}
-      </tbody>
-    </DataTable>
   );
 }
 

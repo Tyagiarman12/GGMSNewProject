@@ -196,7 +196,7 @@ export function EmployeePerformancePage({ activeCompany }: { activeCompany: any 
 
   // Handle Delete Task
   async function handleDeleteTask(taskId: string) {
-    if (!confirm(`Are you sure you want to delete task ${taskId}?`)) return;
+    if (!window.confirm(`Are you sure you want to delete task ${taskId}?`)) return;
     try {
       await apiFetch(`api/EmployeeTasks/${taskId}`, { method: "DELETE" });
       setTasks((prev) => prev.filter((t) => t.id !== taskId));

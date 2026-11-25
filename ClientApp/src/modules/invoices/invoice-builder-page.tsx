@@ -8,7 +8,14 @@ import type { Company } from "../../data/mock";
 import type { InvoiceLine, ProductItem, ProductGroupItem, UomItem } from "../../modules/shared/domain";
 import { SectionTitle, ConfirmDeleteModal } from "../../modules/shared/screen-kit";
 import { apiFetch } from "../../lib/api";
-import { UniversalProductSearch, UniversalQuotationSearch } from "../../components/ui/universal-search";
+import { printDocument } from "../../lib/print-document";
+import {
+  SearchableSelect,
+  UniversalCustomerSearch,
+  UniversalProductSearch,
+  UniversalQuotationSearch,
+  UniversalUserSearch
+} from "../../components/ui/universal-search";
 import {
   Check,
   Edit,
@@ -783,16 +790,18 @@ export function InvoiceBuilderPage({
                     {salesType}
                   </span>
                 </div>
-                <select
+                <SearchableSelect
                   value={salesType}
-                  onChange={(e) => setSalesType(e.target.value)}
-                  className="block w-full h-10 rounded-xl border border-slate-200/90 bg-white px-3 py-2 text-sm text-slate-900 outline-none hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-bold shadow-2xs"
-                >
-                  <option value="Credit">Credit Sales</option>
-                  <option value="Cash">Cash Sales</option>
-                  <option value="Export">Export Sales</option>
-                  <option value="Local">Local Sales</option>
-                </select>
+                  onChange={setSalesType}
+                  ariaLabel="Sales type"
+                  className="font-bold"
+                  options={[
+                    { value: "Credit", label: "Credit Sales" },
+                    { value: "Cash", label: "Cash Sales" },
+                    { value: "Export", label: "Export Sales" },
+                    { value: "Local", label: "Local Sales" }
+                  ]}
+                />
               </div>
 
               <div>
@@ -847,18 +856,13 @@ export function InvoiceBuilderPage({
                     <Plus className="h-3 w-3" /> Quick Add
                   </button>
                 </div>
-                <select
-                  value={customer}
-                  onChange={(e) => handleCustomerChange(e.target.value)}
-                  className="block w-full h-10 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all font-bold text-blue-900"
-                >
-                  <option value="">Select Customer...</option>
-                  {clients.map((c) => (
-                    <option key={c.id} value={c.name}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                <UniversalCustomerSearch
+                  clients={clients}
+                  selectedCustomer={customer}
+                  onSelectCustomer={(clientName) => handleCustomerChange(clientName)}
+                  placeholder="Select Customer..."
+                  className="font-bold text-blue-900"
+                />
               </div>
 
               <div>
@@ -878,18 +882,12 @@ export function InvoiceBuilderPage({
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                   Salesman / Agent
                 </label>
-                <select
-                  value={salesman}
-                  onChange={(e) => setSalesman(e.target.value)}
-                  className="block w-full h-10 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all"
-                >
-                  <option value="">Select Salesperson...</option>
-                  {users.map((u) => (
-                    <option key={u.id} value={u.email}>
-                      {u.email}
-                    </option>
-                  ))}
-                </select>
+                <UniversalUserSearch
+                  users={users}
+                  selectedUser={salesman}
+                  onSelectUser={(userValue) => setSalesman(userValue)}
+                  placeholder="Select Salesperson..."
+                />
               </div>
 
               <div className="flex flex-col justify-center bg-white p-3 rounded-xl border border-slate-200/80 shadow-2xs">
@@ -1092,18 +1090,20 @@ export function InvoiceBuilderPage({
                       <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1.5">
                         UOM
                       </label>
-                      <select
+                      <SearchableSelect
                         value={pickerUom}
-                        onChange={(e) => setPickerUom(e.target.value)}
-                        className="block w-full h-10 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all font-semibold"
-                      >
-                        <option value="pcs">pcs</option>
-                        <option value="box">box</option>
-                        <option value="mtr">mtr</option>
-                        <option value="job">job</option>
-                        <option value="pack">pack</option>
-                        <option value="kg">kg</option>
-                      </select>
+                        onChange={setPickerUom}
+                        ariaLabel="Unit of measurement"
+                        className="font-semibold"
+                        options={[
+                          { value: "pcs", label: "pcs" },
+                          { value: "box", label: "box" },
+                          { value: "mtr", label: "mtr" },
+                          { value: "job", label: "job" },
+                          { value: "pack", label: "pack" },
+                          { value: "kg", label: "kg" }
+                        ]}
+                      />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1.5">
@@ -1576,7 +1576,6 @@ export function InvoiceBuilderPage({
       {/* --- QUICK ADD CLIENT MODAL --- */}
       {isClientModalOpen && (
         <div
-          onClick={(e) => { if (e.target === e.currentTarget) setIsClientModalOpen(false); }}
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-md p-4 animate-fade-in"
         >
           <div className="relative bg-white rounded-3xl border border-slate-100 shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col animate-scale-up">
@@ -1774,9 +1773,9 @@ export function InvoiceBuilderPage({
               }
             }
           }}
-          className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/60 backdrop-blur-md p-4 overflow-y-auto print:p-0 print:bg-white print:static animate-fade-in"
+          className="invoice-print-document fixed inset-0 z-50 flex items-start justify-center bg-slate-950/60 backdrop-blur-md p-4 overflow-y-auto print:p-0 print:bg-white print:static animate-fade-in"
         >
-          <div className="relative bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-4xl w-full p-8 space-y-6 print:border-none print:shadow-none print:p-0 my-6 print:my-0 text-slate-900">
+          <div className="print-document-card relative bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-4xl w-full p-8 space-y-6 print:border-none print:shadow-none print:p-0 my-6 print:my-0 text-slate-900">
             {/* Header control toolbar (hidden when printing) */}
             <div className="flex justify-between items-center border-b border-slate-200 pb-4 print:hidden">
               <div className="flex items-center gap-3">
@@ -1795,7 +1794,7 @@ export function InvoiceBuilderPage({
               <div className="flex items-center gap-3">
                 <Button
                   variant="primary"
-                  onClick={() => window.print()}
+                  onClick={() => printDocument(".invoice-print-document")}
                   className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-10 px-4 rounded-xl flex items-center gap-1.5 shadow-md shadow-blue-500/10"
                 >
                   <Printer className="h-4 w-4" /> Print Sheet
@@ -1817,7 +1816,7 @@ export function InvoiceBuilderPage({
             </div>
 
             {/* Printable Document Body */}
-            <div className="p-6 bg-white text-slate-900 font-sans space-y-6 print:p-0 print:shadow-none">
+            <div className="print-document-body p-6 bg-white text-slate-900 font-sans space-y-6 print:p-0 print:shadow-none">
               
               {/* Header Section */}
               <div className="flex items-start justify-between border-b-2 border-slate-900 pb-5 gap-6">
@@ -1898,7 +1897,7 @@ export function InvoiceBuilderPage({
                 const paymentTermVal = salesType || postedInvoice.paymentTerms || clientMatch?.paymentTerms || "CHEQUE";
 
                 return (
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                  <div className="print-document-customer-grid grid grid-cols-1 md:grid-cols-12 gap-4">
                     {/* Customer Box */}
                     <div className="md:col-span-7 rounded-xl border border-slate-300 bg-slate-50/50 p-4 space-y-2 text-xs">
                       <div className="text-xs font-black uppercase text-slate-900 tracking-wider border-b border-slate-200 pb-1.5 flex items-center justify-between">
@@ -2028,7 +2027,7 @@ export function InvoiceBuilderPage({
 
                     {/* Summary Cards */}
                     {printOption === "SalesInvoice" ? (
-                      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                      <div className="print-document-summary-grid grid grid-cols-1 md:grid-cols-12 gap-4">
                         {/* Amount In Words Box */}
                         <div className="md:col-span-7 rounded-xl border border-slate-300 bg-slate-50/60 p-4 flex flex-col justify-between text-xs space-y-3">
                           <div>
@@ -2095,7 +2094,7 @@ export function InvoiceBuilderPage({
 
               {/* Signatures Row */}
               {printOption === "SalesInvoice" && (
-                <div className="pt-6 grid grid-cols-2 text-xs font-semibold text-slate-900 gap-8">
+                <div className="print-document-signatures pt-6 grid grid-cols-2 text-xs font-semibold text-slate-900 gap-8">
                   <div className="space-y-12">
                     <p className="font-bold">Customer Acceptance Signature:</p>
                     <div className="border-b border-slate-400 w-48" />
@@ -2109,7 +2108,7 @@ export function InvoiceBuilderPage({
               )}
 
               {/* Document Footer */}
-              <div className="pt-6 border-t border-slate-300 text-center text-[10px] font-semibold text-slate-600 space-y-1">
+              <div className="print-document-footer pt-6 border-t border-slate-300 text-center text-[10px] font-semibold text-slate-600 space-y-1">
                 <p className="font-bold uppercase tracking-wider text-slate-900">{activeCompany.name} • {activeCompany.address || "Sultanate of Oman"}</p>
                 <p className="flex justify-center items-center gap-4 text-slate-500">
                   {activeCompany.contactNo && <span>Tel: {activeCompany.contactNo}</span>}
@@ -2137,7 +2136,7 @@ export function InvoiceBuilderPage({
               </Button>
               <Button
                 variant="primary"
-                onClick={() => window.print()}
+                onClick={() => printDocument(".invoice-print-document")}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-10 px-4 rounded-xl flex items-center gap-1.5 shadow-md shadow-blue-500/10"
               >
                 <Printer className="h-4 w-4" /> Print Tax Invoice PDF
@@ -2150,7 +2149,6 @@ export function InvoiceBuilderPage({
       {/* --- Quick Add Product Modal --- */}
       {isProductModalOpen && (
         <div
-          onClick={(e) => { if (e.target === e.currentTarget) setIsProductModalOpen(false); }}
           className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-955/60 backdrop-blur-md p-4 animate-fade-in print:hidden"
         >
           <div className="relative bg-white rounded-3xl border border-slate-100 shadow-2xl max-w-lg w-full p-6 space-y-4 animate-scale-up max-h-[90vh] overflow-y-auto">
@@ -2211,45 +2209,42 @@ export function InvoiceBuilderPage({
                   <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-600 mb-1">
                     Product Group <span className="text-rose-500">*</span>
                   </label>
-                  <select
+                  <SearchableSelect
                     required
                     value={newProductGroupId}
-                    onChange={(e) => handleQuickProductGroupChange(e.target.value)}
-                    className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition cursor-pointer"
-                  >
-                    <option value="">Select Product Group...</option>
-                    {productGroups.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.name} ({g.vatPercentage}% VAT)
-                      </option>
-                    ))}
-                  </select>
+                    onChange={handleQuickProductGroupChange}
+                    ariaLabel="Product group"
+                    placeholder="Select Product Group..."
+                    className="font-bold"
+                    options={productGroups.map((g) => ({
+                      value: String(g.id),
+                      label: `${g.name} (${g.vatPercentage}% VAT)`
+                    }))}
+                  />
                 </div>
 
                 <div>
                   <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-600 mb-1">
                     UOM (Unit of Measurement) <span className="text-rose-500">*</span>
                   </label>
-                  <select
+                  <SearchableSelect
                     required
                     value={newProductUom}
-                    onChange={(e) => setNewProductUom(e.target.value)}
-                    className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition cursor-pointer"
-                  >
-                    <option value="">Select UOM...</option>
-                    {uomMasterList.map((u) => (
-                      <option key={u.id} value={u.name}>
-                        {u.name} - {u.description || u.name}
-                      </option>
-                    ))}
-                    {uomMasterList.length === 0 && (
-                      <>
-                        <option value="Pcs">Pcs</option>
-                        <option value="Meter">Meter</option>
-                        <option value="Box">Box</option>
-                      </>
-                    )}
-                  </select>
+                    onChange={setNewProductUom}
+                    ariaLabel="Unit of measurement"
+                    placeholder="Select UOM..."
+                    className="font-bold"
+                    options={uomMasterList.length > 0
+                      ? uomMasterList.map((u) => ({
+                        value: u.name,
+                        label: `${u.name} - ${u.description || u.name}`
+                      }))
+                      : [
+                        { value: "Pcs", label: "Pcs" },
+                        { value: "Meter", label: "Meter" },
+                        { value: "Box", label: "Box" }
+                      ]}
+                  />
                 </div>
 
                 <div>

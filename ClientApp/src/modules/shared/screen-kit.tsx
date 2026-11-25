@@ -90,17 +90,19 @@ export function SectionTitle({
   );
 }
 
-export function DataTable({ title, action, children, onAction }: { title: string; action: string; children: ReactNode; onAction?: () => void }) {
+export function DataTable({ title, action, children, onAction, tableClassName }: { title: string; action: string; children: ReactNode; onAction?: () => void; tableClassName?: string }) {
   return (
     <Card className="overflow-hidden border-slate-200/90 shadow-md shadow-slate-200/50">
       <CardHeader className="flex flex-row items-center justify-between bg-slate-50/60 py-3.5 px-5 border-b border-slate-200/80">
         <CardTitle className="text-base font-extrabold text-slate-900">{title}</CardTitle>
-        <Button size="sm" variant="primary" onClick={onAction}>
-          <Plus className="h-4 w-4" /> {action}
-        </Button>
+        {action && (
+          <Button size="sm" variant="primary" onClick={onAction}>
+            <Plus className="h-4 w-4" /> {action}
+          </Button>
+        )}
       </CardHeader>
       <CardContent className="overflow-x-auto p-0">
-        <Table>{children}</Table>
+        <Table className={tableClassName}>{children}</Table>
       </CardContent>
     </Card>
   );

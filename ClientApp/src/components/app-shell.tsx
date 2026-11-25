@@ -156,15 +156,15 @@ export function AppShell({
 
   return (
     <div className="premium-surface min-h-screen">
+      <TopBar
+        activeCompany={activeCompany}
+        activePage={activePage}
+        setActivePage={setActivePage}
+        onLogout={onLogout}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+      />
       <AppSidebar activePage={activePage} setActivePage={setActivePage} />
       <div className="lg:pl-80 print:pl-0">
-        <TopBar
-          activeCompany={activeCompany}
-          activePage={activePage}
-          setActivePage={setActivePage}
-          onLogout={onLogout}
-          onOpenSettings={() => setIsSettingsOpen(true)}
-        />
         <main className="px-4 py-6 sm:px-6 lg:px-8 xl:px-10 print:p-0">{children}</main>
       </div>
 
@@ -186,8 +186,8 @@ export function AppSidebar({
   const [isFinanceEntitiesOpen, setIsFinanceEntitiesOpen] = useState(false);
 
   return (
-    <aside className="sidebar-glow fixed inset-y-0 left-0 hidden w-80 border-r border-slate-800/60 text-white shadow-2xl shadow-slate-950/40 lg:block print:hidden">
-      <div className="flex h-20 items-center justify-between border-b border-white/10 px-4 backdrop-blur-md">
+    <aside className="sidebar-glow fixed inset-y-0 left-0 z-30 hidden w-80 border-r border-slate-800/60 text-white shadow-2xl shadow-slate-950/40 lg:block print:hidden">
+      <div className="flex h-24 items-center justify-between border-b border-white/10 px-4 backdrop-blur-md">
         <div className="flex items-center justify-center w-full h-full py-2">
           <div className="bg-white rounded-xl px-3 py-1.5 shadow-md shadow-blue-950/40 flex items-center justify-center w-full h-full overflow-hidden">
             <img
@@ -198,7 +198,7 @@ export function AppSidebar({
           </div>
         </div>
       </div>
-      <div className="h-[calc(100vh-5rem)] overflow-y-auto px-4 py-5 space-y-6">
+      <div className="h-[calc(100vh-6rem)] overflow-y-auto px-4 py-5 space-y-6">
         {navGroups.map((group) => {
           const items = navItems.filter((item) => item.group === group);
           return (
@@ -421,16 +421,23 @@ export function TopBar({
   onLogout: () => void;
   onOpenSettings: () => void;
 }) {
-  const activeTitle = navItems.find((item) => item.id === activePage)?.name ?? "Dashboard";
+  const loggedInUser = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "{}") : {};
+  const userName = loggedInUser.name || loggedInUser.email || "User";
+  const userInitials = userName
+    .split(/[\s@._-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part: string) => part[0].toUpperCase())
+    .join("");
 
   return (
-    <header className="glass-topbar sticky top-0 z-20 border-b border-slate-200/80 px-4 py-3 sm:px-6 lg:px-8 xl:px-10 print:hidden">
-      <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-40 h-24 border-b border-white/10 bg-[#071727] px-4 text-white shadow-xl shadow-slate-950/10 sm:px-6 lg:ml-80 lg:px-5 xl:px-7 print:hidden">
+      <div className="flex h-full min-w-0 items-center gap-3 xl:gap-5">
         <div className="group relative lg:hidden">
-          <Button size="icon" aria-label="Open navigation">
+          <Button size="icon" aria-label="Open navigation" className="h-10 w-10 border-white/15 bg-white/10 text-white hover:bg-white/20 hover:text-white">
             <Menu className="h-4 w-4" />
           </Button>
-          <div className="invisible absolute left-0 top-12 z-30 max-h-[80vh] w-80 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 opacity-0 shadow-2xl transition group-hover:visible group-hover:opacity-100">
+          <div className="invisible absolute left-0 top-12 z-50 max-h-[80vh] w-80 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 text-slate-800 opacity-0 shadow-2xl transition group-hover:visible group-hover:opacity-100">
             {navItems.map((item) => (
               <button
                 key={item.id}
@@ -445,61 +452,46 @@ export function TopBar({
           </div>
         </div>
 
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">GGMS IT Solutions</span>
-            <span className="inline-block h-1 w-1 rounded-full bg-slate-300" />
-            <span className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Connected
-            </span>
-          </div>
-          <h1 className="truncate text-base font-extrabold text-slate-950 sm:text-lg tracking-tight">{activeTitle}</h1>
-        </div>
-
-        <div className="ml-auto hidden flex-1 justify-center xl:flex">
+        <div className="min-w-0 flex-1">
           <AiCommandBar />
         </div>
 
-        <CompanyBadge activeCompany={activeCompany} onClick={onOpenSettings} />
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <CompanyBadge activeCompany={activeCompany} onClick={onOpenSettings} />
 
-        {/* Notifications Icon */}
-        <div className="relative">
-          <Button size="icon" aria-label="Notifications" className="relative">
-            <Bell className="h-4 w-4" />
-            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-blue-600 ring-2 ring-white" />
+          <div className="relative">
+            <Button size="icon" aria-label="Notifications" className="relative h-12 w-12 rounded-2xl border-0 bg-slate-100 text-slate-700 shadow-none hover:bg-white">
+              <Bell className="h-5 w-5" />
+              <span className="absolute right-2.5 top-2.5 h-2.5 w-2.5 rounded-full bg-cyan-500 ring-2 ring-slate-100" />
+            </Button>
+          </div>
+
+          <div className="relative">
+            <Button
+              size="icon"
+              aria-label="Settings"
+              onClick={onOpenSettings}
+              className="h-12 w-12 rounded-2xl border-0 bg-slate-100 text-slate-700 shadow-none hover:bg-white hover:text-blue-600"
+              title="Company & Currency Settings"
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
+          </div>
+
+          <div className="hidden h-12 max-w-56 items-center gap-3 rounded-2xl border border-white/10 bg-slate-100 px-3 text-slate-900 sm:flex">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0b293b] text-xs font-black text-cyan-300">
+              {userInitials}
+            </div>
+            <div className="min-w-0 leading-tight">
+              <p className="truncate text-xs font-extrabold">{userName}</p>
+              <p className="text-[11px] font-medium text-slate-400">Full Access</p>
+            </div>
+          </div>
+
+          <Button size="icon" aria-label="Logout" onClick={onLogout} className="h-12 w-12 rounded-2xl border-0 bg-slate-100 text-slate-600 shadow-none hover:bg-rose-50 hover:text-red-600">
+            <LogOut className="h-5 w-5" />
           </Button>
         </div>
-
-        {/* Settings Icon - Positioned directly AFTER Notifications Icon */}
-        <div className="relative">
-          <Button
-            size="icon"
-            aria-label="Settings"
-            onClick={onOpenSettings}
-            className="hover:bg-slate-100 text-slate-700 hover:text-blue-600 transition-colors"
-            title="Company & Currency Settings"
-          >
-            <Settings className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <div className="hidden items-center gap-3 rounded-2xl border border-slate-200/90 bg-white/90 px-3.5 py-1.5 shadow-sm sm:flex hover:border-slate-300 transition-colors">
-          <div className="h-8.5 w-8.5 rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 text-center text-xs font-black leading-8 text-white shadow-sm ring-2 ring-blue-500/20">
-            MD
-          </div>
-          <div className="leading-tight">
-            <p className="text-xs font-extrabold text-slate-900">Managing Director</p>
-            <p className="text-[11px] font-medium text-slate-500">Full Access</p>
-          </div>
-        </div>
-
-        <Button size="icon" aria-label="Logout" onClick={onLogout} className="hover:text-red-600 hover:bg-rose-50">
-          <LogOut className="h-4 w-4" />
-        </Button>
-      </div>
-      <div className="mt-3 xl:hidden">
-        <AiCommandBar />
       </div>
     </header>
   );
@@ -507,15 +499,17 @@ export function TopBar({
 
 export function AiCommandBar() {
   return (
-    <div className="group flex h-11 w-full max-w-2xl items-center gap-3 rounded-2xl border border-slate-200/90 bg-white/90 px-4 shadow-sm transition-all duration-200 focus-within:border-blue-500/60 focus-within:ring-4 focus-within:ring-blue-500/10 hover:border-slate-300">
-      <Search className="h-4 w-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-      <input className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-slate-400 text-slate-900" placeholder="Search or ask AI: overdue invoices, low margin projects, KLEEV credentials..." />
-      <div className="hidden items-center gap-1 rounded-lg border border-slate-200 bg-slate-100/80 px-2 py-0.5 text-xs font-bold text-slate-500 sm:flex">
+    <div className="group flex h-12 w-full max-w-[52rem] items-center gap-3 rounded-2xl border border-white/20 bg-slate-100/90 px-3 shadow-inner shadow-slate-950/10 transition-all duration-200 focus-within:border-cyan-300/70 focus-within:ring-4 focus-within:ring-cyan-400/10 hover:bg-white">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#071727] text-cyan-300 shadow-sm">
+        <Search className="h-4 w-4" />
+      </span>
+      <input className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-slate-400 text-slate-900 sm:text-base" placeholder="Search or ask AI: invoices, projects, clients..." />
+      <div className="hidden items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-bold text-slate-400 sm:flex">
         <Command className="h-3 w-3" />
         K
       </div>
-      <Button size="sm" variant="primary">
-        <Bot className="h-3.5 w-3.5" />
+      <Button size="sm" className="h-10 shrink-0 rounded-xl bg-[#071727] px-3 text-white shadow-none hover:bg-[#102d40]">
+        <Bot className="h-4 w-4 text-cyan-300" />
         Ask AI
       </Button>
     </div>
@@ -528,19 +522,19 @@ export function CompanyBadge({ activeCompany, onClick }: { activeCompany: Compan
   const isAdmin = currentUser?.role === "Admin";
 
   return (
-    <div className="hidden items-center gap-2.5 2xl:flex">
+    <div className="flex min-w-0 items-center gap-2.5">
       {/* 2-Tier Region & Country Selector Pill (Admins only) */}
       {isAdmin && (
-        <div className="flex items-center gap-1.5 rounded-2xl border border-slate-200/90 bg-white/90 px-3 py-1.5 shadow-sm hover:border-slate-300 transition">
+        <div className="hidden items-center gap-1.5 rounded-2xl border border-white/10 bg-white/10 px-3 py-1.5 text-white transition hover:bg-white/15 2xl:flex">
           <Globe className="h-4 w-4 text-blue-600 flex-shrink-0" />
           <select
             value={selectedCountry}
             onChange={(e) => setSelectedCountry(e.target.value)}
-            className="bg-transparent text-xs font-black text-slate-800 outline-none cursor-pointer pr-1"
+            className="max-w-24 bg-transparent text-xs font-black text-white outline-none cursor-pointer pr-1"
             title="Filter active company dropdown by Country"
           >
             {availableCountries.map((country) => (
-              <option key={country} value={country} className="font-bold text-slate-900 bg-white">
+              <option key={country} value={country} className="bg-white font-bold text-slate-900">
                 {country === "UAE" ? "🇦🇪 UAE (Dubai)" : country === "Oman" ? "🇴🇲 Oman" : country === "Saudi Arabia" ? "🇸🇦 Saudi Arabia" : "🌐 All Regions"}
               </option>
             ))}
@@ -549,32 +543,31 @@ export function CompanyBadge({ activeCompany, onClick }: { activeCompany: Compan
       )}
 
       {/* Active Entity Badge */}
-      <div
+      <button
+        type="button"
         onClick={onClick}
-        className="min-w-60 cursor-pointer flex items-center justify-between gap-3 rounded-2xl border border-slate-200/90 bg-white/90 px-3.5 py-1.5 shadow-sm hover:border-blue-300 transition-all hover:bg-blue-50/20"
+        className="flex h-12 min-w-0 max-w-64 cursor-pointer items-center justify-between gap-2 rounded-2xl border border-white/10 bg-slate-100 px-2.5 text-left text-slate-900 transition hover:bg-white sm:min-w-48 sm:px-3"
         title="Click to configure Company & Currency settings"
       >
-        <span className="flex min-w-0 items-center gap-2.5">
+        <span className="flex min-w-0 items-center gap-2">
           {activeCompany.logoUrl ? (
-            <img src={activeCompany.logoUrl} alt={activeCompany.name} className="h-8 w-8 object-contain rounded-lg border border-slate-100 p-0.5" />
+            <img src={activeCompany.logoUrl} alt={activeCompany.name} className="h-10 w-10 shrink-0 rounded-xl border border-slate-100 object-contain p-0.5" />
           ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-100 font-black text-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0b293b] font-black text-cyan-300">
               {activeCompany.name?.charAt(0) || "G"}
             </div>
           )}
           <span className="min-w-0">
-            <span className="block truncate text-xs font-extrabold text-slate-950">{activeCompany.name}</span>
-            <span className="block text-[11px] text-slate-500 font-medium truncate">
-              {activeCompany.branch || activeCompany.country} • <strong className="text-blue-600 font-mono">{activeCompany.currency}</strong>
+            <span className="block max-w-28 truncate text-xs font-extrabold sm:max-w-32">{activeCompany.name}</span>
+            <span className="block max-w-28 truncate text-[11px] font-medium text-slate-400 sm:max-w-32">
+              {activeCompany.branch || activeCompany.country} · <strong className="font-mono text-cyan-700">{activeCompany.currency}</strong>
             </span>
           </span>
         </span>
-        <Badge variant="success" className="flex-shrink-0">
-          <Zap className="mr-1 h-3 w-3 animate-pulse" />
-          Live
+        <Badge variant="success" className="hidden shrink-0 sm:flex">
+          <Zap className="mr-1 h-3 w-3 animate-pulse" />Live
         </Badge>
-      </div>
+      </button>
     </div>
   );
 }
-

@@ -171,6 +171,11 @@ namespace GGMSNEWPROJECT.Models
         public string CompanyId { get; set; } = "ggms-oman";
         public string Supplier { get; set; } = string.Empty;
         public decimal Amount { get; set; }
+        public decimal Vat { get; set; }
+        public string SupplierVat { get; set; } = string.Empty;
+        public string InvoiceNumber { get; set; } = string.Empty;
+        public string InvoiceDate { get; set; } = string.Empty;
+        public string ReceiptUrl { get; set; } = string.Empty;
         public string Due { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty; // e.g. To Pay, Scheduled
     }
@@ -224,6 +229,34 @@ namespace GGMSNEWPROJECT.Models
         public string Project { get; set; } = string.Empty;
     }
 
+    public class CustomerPayment : ITenantScoped
+    {
+        [Key]
+        public string Id { get; set; } = string.Empty;
+        public string CompanyId { get; set; } = string.Empty;
+        public string InvoiceId { get; set; } = string.Empty;
+        public string Customer { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
+        public string Method { get; set; } = "Bank transfer";
+        public string Reference { get; set; } = string.Empty;
+        public string PaymentDate { get; set; } = string.Empty;
+        public string Status { get; set; } = "Posted";
+    }
+
+    public class SupplierPayment : ITenantScoped
+    {
+        [Key]
+        public string Id { get; set; } = string.Empty;
+        public string CompanyId { get; set; } = string.Empty;
+        public string BillId { get; set; } = string.Empty;
+        public string Supplier { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
+        public string Method { get; set; } = "Bank transfer";
+        public string Reference { get; set; } = string.Empty;
+        public string PaymentDate { get; set; } = string.Empty;
+        public string Status { get; set; } = "Posted";
+    }
+
     public class Renewal : ITenantScoped
     {
         [Key]
@@ -273,6 +306,7 @@ namespace GGMSNEWPROJECT.Models
     {
         [Key]
         public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string PasswordHash { get; set; } = string.Empty;
         public string Role { get; set; } = "User"; // e.g. Admin, Manager, User
@@ -360,7 +394,7 @@ namespace GGMSNEWPROJECT.Models
         public string CompanyId { get; set; } = "ggms-oman";
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public string Creator { get; set; } = "Tatweer Admin";
+        public string Creator { get; set; } = string.Empty;
         public string Editor { get; set; } = "";
         public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
@@ -372,7 +406,9 @@ namespace GGMSNEWPROJECT.Models
         public string CompanyId { get; set; } = "ggms-oman";
         public string Name { get; set; } = string.Empty;
         public string Department { get; set; } = string.Empty;
+        public string ProfitCentreCode { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+        public string Creator { get; set; } = string.Empty;
     }
 
     public class ProfitCentre : ITenantScoped
@@ -383,6 +419,7 @@ namespace GGMSNEWPROJECT.Models
         public string Name { get; set; } = string.Empty;
         public string BusinessUnit { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+        public string Creator { get; set; } = string.Empty;
     }
 
     public class JournalEntry : ITenantScoped
@@ -392,6 +429,7 @@ namespace GGMSNEWPROJECT.Models
         public string CompanyId { get; set; } = "ggms-oman";
         public string EntryTypeCode { get; set; } = "1001";
         public string EntryTypeName { get; set; } = "Journal Entry (JV)";
+        public string Creator { get; set; } = string.Empty;
         public string FiscalYear { get; set; } = "2025-26 (Jul 1st 25 to Jun 30th 26)";
         public string Datetime { get; set; } = string.Empty;
         public string Reference { get; set; } = string.Empty;
@@ -417,4 +455,3 @@ namespace GGMSNEWPROJECT.Models
         public string Notes { get; set; } = string.Empty;
     }
 }
-

@@ -20,6 +20,7 @@ export function UsersPage() {
   const [deletingUser, setDeletingUser] = useState<any | null>(null);
 
   const [formData, setFormData] = useState({
+    name: "",
     email: "",
     password: "",
     role: "User",
@@ -48,6 +49,7 @@ export function UsersPage() {
   const openAddModal = () => {
     setEditingUser(null);
     setFormData({
+      name: "",
       email: "",
       password: "",
       role: "User",
@@ -61,6 +63,7 @@ export function UsersPage() {
   const openEditModal = (user: any) => {
     setEditingUser(user);
     setFormData({
+      name: user.name || "",
       email: user.email,
       password: "",
       role: user.role,
@@ -93,9 +96,10 @@ export function UsersPage() {
 
     try {
       if (editingUser) {
-        await apiFetch(`api/Users/${editingUser.id}`, {
+        const updatedUser = await apiFetch<{ id: number; name: string; email: string }>(`api/Users/${editingUser.id}`, {
           method: "PUT",
           body: JSON.stringify({
+            name: formData.name.trim(),
             email: formData.email.trim(),
             password: formData.password || "",
             role: formData.role,
@@ -104,10 +108,19 @@ export function UsersPage() {
             isActive: formData.isActive
           })
         });
+        const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
+        if (String(loggedInUser.id) === String(updatedUser.id)) {
+          localStorage.setItem("user", JSON.stringify({
+            ...loggedInUser,
+            name: updatedUser.name,
+            email: updatedUser.email
+          }));
+        }
       } else {
         await apiFetch("api/Users", {
           method: "POST",
           body: JSON.stringify({
+            name: formData.name.trim(),
             email: formData.email.trim(),
             password: formData.password,
             role: formData.role,
@@ -197,7 +210,10 @@ export function UsersPage() {
                   return (
                     <tr key={user.id} className="hover:bg-slate-200/60 transition duration-150">
                       <td className="p-3.5 font-bold text-slate-400 text-center font-mono">{user.id}</td>
-                      <td className="p-3.5 font-bold text-slate-900">{user.email}</td>
+                      <td className="p-3.5 font-bold text-slate-900">
+                        <div>{user.name || user.email}</div>
+                        <div className="text-[10px] font-medium text-slate-400">{user.email}</div>
+                      </td>
                       <td className="p-3.5 text-slate-700 font-bold">
                         <span className="inline-flex items-center gap-1.5 rounded bg-blue-50 text-blue-700 px-2 py-1 text-[11px]">
                           <Building2 className="h-3 w-3 text-blue-500" />
@@ -268,7 +284,7 @@ export function UsersPage() {
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
               <div>
                 <h3 className="text-base font-extrabold text-slate-900">{editingUser ? "Edit User Access" : "Create User Access"}</h3>
-                <p className="text-xs text-slate-500 font-semibold">Specify access email, secure password, and role permissions.</p>
+                <p className="text-xs text-slate-500 font-semibold">Specify the user name, access email, secure password, and role permissions.</p>
               </div>
               <button
                 type="button"
@@ -285,6 +301,20 @@ export function UsersPage() {
                   {error}
                 </div>
               )}
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Alex Morgan"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10 transition-all font-semibold"
+                />
+              </div>
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">

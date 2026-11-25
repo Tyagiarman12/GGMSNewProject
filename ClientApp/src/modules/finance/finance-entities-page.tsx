@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Building2,
   Plus,
@@ -20,7 +20,6 @@ import {
 import type { Company } from "../../data/mock";
 import { apiFetch } from "../../lib/api";
 import { Button } from "../../components/ui/button";
-import { Badge } from "../../components/ui/badge";
 import { SectionTitle, ConfirmDeleteModal } from "../shared/screen-kit";
 import type {
   LedgerItem,
@@ -30,6 +29,11 @@ import type {
   JournalEntryRecord,
   JournalEntryLineItem
 } from "../shared/domain";
+
+const createEmptyEntryLines = (): JournalEntryLineItem[] => [
+  { ledgerCode: "", ledgerName: "", debit: 0, credit: 0, notes: "", profitCentreCode: "", costCentreCode: "" },
+  { ledgerCode: "", ledgerName: "", debit: 0, credit: 0, notes: "", profitCentreCode: "", costCentreCode: "" }
+];
 
 export function FinanceEntitiesPage({
   activeCompany,
@@ -54,6 +58,7 @@ export function FinanceEntitiesPage({
   const [costCentres, setCostCentres] = useState<CostCentreItem[]>([]);
   const [profitCentres, setProfitCentres] = useState<ProfitCentreItem[]>([]);
   const [journalEntries, setJournalEntries] = useState<JournalEntryRecord[]>([]);
+  const [selectedVoucher, setSelectedVoucher] = useState<JournalEntryRecord | null>(null);
 
   const [loading, setLoading] = useState<boolean>(true);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -72,8 +77,10 @@ export function FinanceEntitiesPage({
   const [editingEntryType, setEditingEntryType] = useState<EntryTypeItem | null>(null);
 
   const [isCostCentreModalOpen, setIsCostCentreModalOpen] = useState(false);
+  const [editingCostCentre, setEditingCostCentre] = useState<CostCentreItem | null>(null);
 
   const [isProfitCentreModalOpen, setIsProfitCentreModalOpen] = useState(false);
+  const [editingProfitCentre, setEditingProfitCentre] = useState<ProfitCentreItem | null>(null);
 
   // Delete Modal state
   const [deleteTarget, setDeleteTarget] = useState<{ type: "ledger" | "entry-type" | "cost-centre" | "profit-centre" | "journal-entry"; id: string; name: string } | null>(null);
@@ -81,18 +88,40 @@ export function FinanceEntitiesPage({
 
   // Journal Entry Form State
   const [viewEntryMode, setViewEntryMode] = useState<"list" | "create">("list");
-  const [entryTypeVal, setEntryTypeVal] = useState("1001");
+  const [editingJournalEntry, setEditingJournalEntry] = useState<JournalEntryRecord | null>(null);
+  const [entryTypeVal, setEntryTypeVal] = useState("");
+  const [entryTypeDropdownOpen, setEntryTypeDropdownOpen] = useState(false);
+  const [entryTypeDropdownSearch, setEntryTypeDropdownSearch] = useState("");
+  const entryTypeDropdownRef = useRef<HTMLDivElement>(null);
   const [fiscalYearVal, setFiscalYearVal] = useState("2025-26 (Jul 1st 25 to Jun 30th 26)");
   const [datetimeVal, setDatetimeVal] = useState(new Date().toLocaleString());
   const [referenceVal, setReferenceVal] = useState("");
   const [notesVal, setNotesVal] = useState("");
-  const [entryLines, setEntryLines] = useState<JournalEntryLineItem[]>([
-    { ledgerCode: "10001", ledgerName: "Main Bank Account", debit: 0, credit: 0, notes: "", profitCentreCode: "", costCentreCode: "" },
-    { ledgerCode: "4001", ledgerName: "Sales Revenue", debit: 0, credit: 0, notes: "", profitCentreCode: "", costCentreCode: "" }
-  ]);
+  const [entryLines, setEntryLines] = useState<JournalEntryLineItem[]>(createEmptyEntryLines);
+  const selectedEntryType = entryTypes.find((type) => type.code === entryTypeVal);
+  const filteredEntryTypes = entryTypes.filter((type) => {
+    const searchTerm = entryTypeDropdownSearch.trim().toLowerCase();
+    return !searchTerm
+      || type.name.toLowerCase().includes(searchTerm)
+      || type.code.toLowerCase().includes(searchTerm);
+  });
+
+  useEffect(() => {
+    if (!entryTypeDropdownOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (entryTypeDropdownRef.current && !entryTypeDropdownRef.current.contains(event.target as Node)) {
+        setEntryTypeDropdownOpen(false);
+        setEntryTypeDropdownSearch("");
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [entryTypeDropdownOpen]);
 
   // Load all finance entities
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [ledgersRes, entryTypesRes, costCentresRes, profitCentresRes, entriesRes] = await Promise.all([
@@ -113,11 +142,11 @@ export function FinanceEntitiesPage({
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeCompany.id]);
 
   useEffect(() => {
     loadData();
-  }, [activeCompany.id]);
+  }, [loadData]);
 
   const showToast = (type: "success" | "error", text: string) => {
     setFeedbackMsg({ type, text });
@@ -147,9 +176,15 @@ export function FinanceEntitiesPage({
   // -------------------------------------------------------------
   const handleSaveEntryType = async (formData: EntryTypeItem) => {
     try {
+      const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const actorName = currentUser.name || currentUser.email;
+      if (!actorName) {
+        throw new Error("Unable to identify the logged-in user. Please sign in again.");
+      }
+
       await apiFetch<EntryTypeItem>("api/FinanceEntities/entry-types", {
         method: "POST",
-        body: JSON.stringify({ ...formData, companyId: activeCompany.id })
+        body: JSON.stringify({ ...formData, creator: actorName, editor: actorName, companyId: activeCompany.id })
       });
       showToast("success", `Entry Type ${formData.code} saved successfully!`);
       setIsEntryTypeModalOpen(false);
@@ -165,12 +200,19 @@ export function FinanceEntitiesPage({
   // -------------------------------------------------------------
   const handleSaveCostCentre = async (formData: CostCentreItem) => {
     try {
-      await apiFetch("api/FinanceEntities/cost-centres", {
+      const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const creator = editingJournalEntry?.creator || currentUser.name || currentUser.email;
+      if (!creator) {
+        throw new Error("Unable to identify the logged-in user. Please sign in again.");
+      }
+
+      await apiFetch<CostCentreItem>("api/FinanceEntities/cost-centres", {
         method: "POST",
-        body: JSON.stringify({ ...formData, companyId: activeCompany.id })
+        body: JSON.stringify({ ...formData, creator, companyId: activeCompany.id })
       });
       showToast("success", `Cost Centre ${formData.code} saved!`);
       setIsCostCentreModalOpen(false);
+      setEditingCostCentre(null);
       loadData();
     } catch (err: any) {
       showToast("error", err.message || "Failed to save cost centre");
@@ -179,12 +221,19 @@ export function FinanceEntitiesPage({
 
   const handleSaveProfitCentre = async (formData: ProfitCentreItem) => {
     try {
-      await apiFetch("api/FinanceEntities/profit-centres", {
+      const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const creator = editingJournalEntry?.creator || currentUser.name || currentUser.email;
+      if (!creator) {
+        throw new Error("Unable to identify the logged-in user. Please sign in again.");
+      }
+
+      await apiFetch<ProfitCentreItem>("api/FinanceEntities/profit-centres", {
         method: "POST",
-        body: JSON.stringify({ ...formData, companyId: activeCompany.id })
+        body: JSON.stringify({ ...formData, creator, companyId: activeCompany.id })
       });
       showToast("success", `Profit Centre ${formData.code} saved!`);
       setIsProfitCentreModalOpen(false);
+      setEditingProfitCentre(null);
       loadData();
     } catch (err: any) {
       showToast("error", err.message || "Failed to save profit centre");
@@ -232,26 +281,41 @@ export function FinanceEntitiesPage({
   const isBalanced = Math.abs(totalDebit - totalCredit) < 0.001 && totalDebit > 0;
 
   const handleSaveJournalEntry = async () => {
+    if (!selectedEntryType) {
+      showToast("error", "Please select an Entry Type before saving the voucher.");
+      return;
+    }
+
+    if (entryLines.some((line) => !line.ledgerCode)) {
+      showToast("error", "Please select a Ledger Account for each voucher line.");
+      return;
+    }
+
     if (!isBalanced) {
       showToast("error", "Journal Entry is not balanced! Total Debit must equal Total Credit.");
       return;
     }
 
-    const selectedTypeObj = entryTypes.find((t) => t.code === entryTypeVal);
-    const typeName = selectedTypeObj ? selectedTypeObj.name : "Journal Entry (JV)";
+    const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+    const creator = currentUser.name || currentUser.email;
+    if (!creator) {
+      showToast("error", "Unable to identify the logged-in user. Please sign in again.");
+      return;
+    }
 
     const payload: JournalEntryRecord = {
-      id: `JV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: editingJournalEntry?.id || "",
       companyId: activeCompany.id,
       entryTypeCode: entryTypeVal,
-      entryTypeName: typeName,
+      entryTypeName: selectedEntryType.name,
+      creator,
       fiscalYear: fiscalYearVal,
       datetime: datetimeVal,
       reference: referenceVal,
       totalDebit,
       totalCredit,
       notes: notesVal,
-      status: "Saved",
+      status: editingJournalEntry?.status || "Saved",
       lines: entryLines.map((l) => {
         const foundLedger = ledgers.find((led) => led.code === l.ledgerCode);
         return {
@@ -262,15 +326,40 @@ export function FinanceEntitiesPage({
     };
 
     try {
-      await apiFetch("api/FinanceEntities/entries", {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
-      showToast("success", `Voucher Entry ${payload.id} saved to DB!`);
+      const savedEntry = await apiFetch<JournalEntryRecord>(
+        editingJournalEntry
+          ? `api/FinanceEntities/entries/${encodeURIComponent(editingJournalEntry.id)}`
+          : "api/FinanceEntities/entries",
+        {
+          method: editingJournalEntry ? "PUT" : "POST",
+          body: JSON.stringify(payload)
+        }
+      );
+      showToast("success", `Voucher Entry ${savedEntry.id} ${editingJournalEntry ? "updated" : "saved"} successfully.`);
+      setEditingJournalEntry(null);
+      setEntryTypeVal("");
+      setFiscalYearVal("2025-26 (Jul 1st 25 to Jun 30th 26)");
+      setDatetimeVal(new Date().toLocaleString());
+      setReferenceVal("");
+      setNotesVal("");
+      setEntryLines(createEmptyEntryLines());
       setViewEntryMode("list");
       loadData();
     } catch (err: any) {
       showToast("error", err.message || "Failed to save entry to database");
+    }
+  };
+
+  const handlePostJournalEntry = async (entry: JournalEntryRecord) => {
+    try {
+      await apiFetch<JournalEntryRecord>(`api/FinanceEntities/entries/${encodeURIComponent(entry.id)}/status`, {
+        method: "PUT",
+        body: JSON.stringify("Posted")
+      });
+      showToast("success", `Voucher Entry ${entry.id} posted.`);
+      await loadData();
+    } catch (err: any) {
+      showToast("error", err.message || "Failed to post journal entry");
     }
   };
 
@@ -606,7 +695,7 @@ export function FinanceEntitiesPage({
           {/* TAB 3: COST & PROFIT CENTRES */}
           {/* ========================================================================= */}
           {activeTab === "cost-profit-centres" && (
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-6">
               {/* Profit Centres Panel */}
               <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -614,35 +703,64 @@ export function FinanceEntitiesPage({
                     <h3 className="text-sm font-extrabold text-slate-900">Profit Centres</h3>
                     <p className="text-[11px] font-medium text-slate-500">Business units & revenue generation centres</p>
                   </div>
-                  <Button size="sm" variant="primary" onClick={() => setIsProfitCentreModalOpen(true)} className="h-8 text-xs font-bold">
+                  <Button size="sm" variant="primary" onClick={() => {
+                    setEditingProfitCentre(null);
+                    setIsProfitCentreModalOpen(true);
+                  }} className="h-8 text-xs font-bold">
                     <Plus className="h-3.5 w-3.5" /> Add Profit Centre
                   </Button>
                 </div>
 
-                <div className="space-y-2">
-                  {profitCentres.map((pc) => (
-                    <div key={pc.code} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 p-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-extrabold text-blue-600">{pc.code}</span>
-                          <span className="text-xs font-extrabold text-slate-900">{pc.name}</span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 mt-0.5">{pc.businessUnit} • {pc.description}</p>
-                      </div>
-                      <button
-                        onClick={() =>
-                          setDeleteTarget({
-                            type: "profit-centre",
-                            id: pc.code,
-                            name: `Profit Centre ${pc.code} (${pc.name})`
-                          })
-                        }
-                        className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-100 hover:text-rose-600"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ))}
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[640px] text-left text-xs">
+                    <thead>
+                      <tr className="bg-slate-900 text-white font-extrabold uppercase text-[11px] tracking-wider">
+                        <th className="py-3.5 px-4">Code</th>
+                        <th className="py-3.5 px-4">Name</th>
+                        <th className="py-3.5 px-4">Description</th>
+                        <th className="py-3.5 px-4">Creator</th>
+                        <th className="py-3.5 px-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {profitCentres.map((pc) => (
+                        <tr key={pc.code} className="text-slate-700 hover:bg-slate-50">
+                          <td className="p-3 font-mono font-bold text-blue-600">{pc.code}</td>
+                          <td className="p-3 font-bold text-slate-900">{pc.name}</td>
+                          <td className="p-3">{pc.description || "—"}</td>
+                          <td className="p-3">{pc.creator || "—"}</td>
+                          <td className="p-3 text-right">
+                            <button
+                              onClick={() => {
+                                setEditingProfitCentre(pc);
+                                setIsProfitCentreModalOpen(true);
+                              }}
+                              className="mr-1 rounded-lg p-1.5 text-slate-400 hover:bg-blue-50 hover:text-blue-600"
+                              aria-label={`Edit profit centre ${pc.name}`}
+                            >
+                              <Edit2 className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() =>
+                                setDeleteTarget({
+                                  type: "profit-centre",
+                                  id: pc.code,
+                                  name: `Profit Centre ${pc.code} (${pc.name})`
+                                })
+                              }
+                              className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-100 hover:text-rose-600"
+                              aria-label={`Delete profit centre ${pc.name}`}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {profitCentres.length === 0 && (
+                        <tr><td colSpan={5} className="p-6 text-center text-slate-400">No profit centres added yet.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
@@ -653,35 +771,68 @@ export function FinanceEntitiesPage({
                     <h3 className="text-sm font-extrabold text-slate-900">Cost Centres</h3>
                     <p className="text-[11px] font-medium text-slate-500">Departmental cost allocation & tracking</p>
                   </div>
-                  <Button size="sm" variant="primary" onClick={() => setIsCostCentreModalOpen(true)} className="h-8 text-xs font-bold">
+                  <Button size="sm" variant="primary" onClick={() => {
+                    setEditingCostCentre(null);
+                    setIsCostCentreModalOpen(true);
+                  }} className="h-8 text-xs font-bold">
                     <Plus className="h-3.5 w-3.5" /> Add Cost Centre
                   </Button>
                 </div>
 
-                <div className="space-y-2">
-                  {costCentres.map((cc) => (
-                    <div key={cc.code} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 p-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-extrabold text-indigo-600">{cc.code}</span>
-                          <span className="text-xs font-extrabold text-slate-900">{cc.name}</span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 mt-0.5">{cc.department} • {cc.description}</p>
-                      </div>
-                      <button
-                        onClick={() =>
-                          setDeleteTarget({
-                            type: "cost-centre",
-                            id: cc.code,
-                            name: `Cost Centre ${cc.code} (${cc.name})`
-                          })
-                        }
-                        className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-100 hover:text-rose-600"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ))}
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[720px] text-left text-xs">
+                    <thead>
+                      <tr className="bg-slate-900 text-white font-extrabold uppercase text-[11px] tracking-wider">
+                        <th className="py-3.5 px-4">Code</th>
+                        <th className="py-3.5 px-4">Name</th>
+                        <th className="py-3.5 px-4">Profit Centre</th>
+                        <th className="py-3.5 px-4">Description</th>
+                        <th className="py-3.5 px-4">Creator</th>
+                        <th className="py-3.5 px-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {costCentres.map((cc) => (
+                        <tr key={cc.code} className="text-slate-700 hover:bg-slate-50">
+                          <td className="p-3 font-mono font-bold text-indigo-600">{cc.code}</td>
+                          <td className="p-3 font-bold text-slate-900">{cc.name}</td>
+                          <td className="p-3">
+                            {profitCentres.find((centre) => centre.code === cc.profitCentreCode)?.name || cc.profitCentreCode || "—"}
+                          </td>
+                          <td className="p-3">{cc.description || "—"}</td>
+                          <td className="p-3">{cc.creator || "—"}</td>
+                          <td className="p-3 text-right">
+                            <button
+                              onClick={() => {
+                                setEditingCostCentre(cc);
+                                setIsCostCentreModalOpen(true);
+                              }}
+                              className="mr-1 rounded-lg p-1.5 text-slate-400 hover:bg-blue-50 hover:text-blue-600"
+                              aria-label={`Edit cost centre ${cc.name}`}
+                            >
+                              <Edit2 className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() =>
+                                setDeleteTarget({
+                                  type: "cost-centre",
+                                  id: cc.code,
+                                  name: `Cost Centre ${cc.code} (${cc.name})`
+                                })
+                              }
+                              className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-100 hover:text-rose-600"
+                              aria-label={`Delete cost centre ${cc.name}`}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {costCentres.length === 0 && (
+                        <tr><td colSpan={6} className="p-6 text-center text-slate-400">No cost centres added yet.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
@@ -696,19 +847,44 @@ export function FinanceEntitiesPage({
               <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div>
                   <h3 className="text-sm font-extrabold text-slate-900">
-                    {viewEntryMode === "create" ? "New Entry Form" : "Recorded Journal Vouchers"}
+                    {viewEntryMode === "create" ? (editingJournalEntry ? "Edit Entry Form" : "New Entry Form") : "Recorded Journal Vouchers"}
                   </h3>
                   <p className="text-[11px] text-slate-500">
-                    {viewEntryMode === "create" ? "Create a balanced debit & credit voucher entry." : "Historical accounting vouchers saved in SQLite DB."}
+                    {viewEntryMode === "create"
+                      ? `${editingJournalEntry ? "Update" : "Create"} a balanced debit & credit voucher entry.`
+                      : "Historical accounting vouchers saved in SQLite DB."}
                   </p>
                 </div>
 
                 {viewEntryMode === "list" ? (
-                  <Button size="sm" variant="primary" onClick={() => setViewEntryMode("create")} className="h-9 gap-1.5 text-xs font-bold bg-teal-600 hover:bg-teal-700">
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={() => {
+                      setEditingJournalEntry(null);
+                      setEntryTypeVal("");
+                      setEntryTypeDropdownSearch("");
+                      setFiscalYearVal("2025-26 (Jul 1st 25 to Jun 30th 26)");
+                      setDatetimeVal(new Date().toLocaleString());
+                      setReferenceVal("");
+                      setNotesVal("");
+                      setEntryLines(createEmptyEntryLines());
+                      setViewEntryMode("create");
+                    }}
+                    className="h-9 gap-1.5 text-xs font-bold bg-teal-600 hover:bg-teal-700"
+                  >
                     <Plus className="h-4 w-4" /> Create New Entry
                   </Button>
                 ) : (
-                  <Button size="sm" variant="secondary" onClick={() => setViewEntryMode("list")} className="h-9 gap-1.5 text-xs font-bold">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      setEditingJournalEntry(null);
+                      setViewEntryMode("list");
+                    }}
+                    className="h-9 gap-1.5 text-xs font-bold"
+                  >
                     Go Back to Entries List
                   </Button>
                 )}
@@ -719,21 +895,60 @@ export function FinanceEntitiesPage({
                 <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                   {/* Top Form Fields */}
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <div>
+                    <div ref={entryTypeDropdownRef} className="relative">
                       <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 mb-1">
                         Entry Type <span className="text-rose-500">*</span>
                       </label>
-                      <select
-                        value={entryTypeVal}
-                        onChange={(e) => setEntryTypeVal(e.target.value)}
-                        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-800 outline-none focus:border-blue-500"
-                      >
-                        {entryTypes.map((t) => (
-                          <option key={t.code} value={t.code}>
-                            {t.name} ({t.code})
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                        <input
+                          type="text"
+                          role="combobox"
+                          aria-label="Search entry types"
+                          aria-expanded={entryTypeDropdownOpen}
+                          aria-controls="journal-entry-type-options"
+                          aria-autocomplete="list"
+                          value={entryTypeDropdownOpen ? entryTypeDropdownSearch : selectedEntryType ? `${selectedEntryType.name} (${selectedEntryType.code})` : ""}
+                          onFocus={() => {
+                            setEntryTypeDropdownSearch("");
+                            setEntryTypeDropdownOpen(true);
+                          }}
+                          onChange={(event) => {
+                            setEntryTypeDropdownSearch(event.target.value);
+                            setEntryTypeDropdownOpen(true);
+                          }}
+                          placeholder="Select or search entry type..."
+                          className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-xs font-bold text-slate-800 outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      {entryTypeDropdownOpen && (
+                        <div
+                          id="journal-entry-type-options"
+                          role="listbox"
+                          className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+                        >
+                          {filteredEntryTypes.length ? filteredEntryTypes.map((type) => (
+                            <button
+                              key={type.code}
+                              type="button"
+                              role="option"
+                              aria-selected={type.code === entryTypeVal}
+                              onClick={() => {
+                                setEntryTypeVal(type.code);
+                                setEntryTypeDropdownSearch("");
+                                setEntryTypeDropdownOpen(false);
+                              }}
+                              className={`block w-full px-3 py-2 text-left text-xs hover:bg-blue-50 ${
+                                type.code === entryTypeVal ? "bg-blue-50 font-extrabold text-blue-700" : "font-semibold text-slate-700"
+                              }`}
+                            >
+                              {type.name} ({type.code})
+                            </button>
+                          )) : (
+                            <p className="px-3 py-2 text-xs text-slate-500">No matching entry types.</p>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div>
@@ -919,7 +1134,7 @@ export function FinanceEntitiesPage({
                           onClick={() =>
                             setEntryLines([
                               ...entryLines,
-                              { ledgerCode: "1001", ledgerName: "Current Asset", debit: 0, credit: 0, notes: "", profitCentreCode: "", costCentreCode: "" }
+                              { ledgerCode: "", ledgerName: "", debit: 0, credit: 0, notes: "", profitCentreCode: "", costCentreCode: "" }
                             ])
                           }
                           className="h-8 gap-1.5 text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -963,7 +1178,13 @@ export function FinanceEntitiesPage({
 
                   {/* Submit Button */}
                   <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
-                    <Button variant="secondary" onClick={() => setViewEntryMode("list")}>
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setEditingJournalEntry(null);
+                        setViewEntryMode("list");
+                      }}
+                    >
                       Cancel
                     </Button>
                     <Button
@@ -972,48 +1193,97 @@ export function FinanceEntitiesPage({
                       disabled={!isBalanced}
                       className="bg-blue-600 hover:bg-blue-700 text-white px-6 font-bold"
                     >
-                      Save Entry
+                      {editingJournalEntry ? "Update Entry" : "Save Entry"}
                     </Button>
                   </div>
                 </div>
               ) : (
                 /* JOURNAL ENTRIES LIST TABLE */
-                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                  <table className="w-full text-left text-xs border-collapse">
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <table className="w-full min-w-[820px] table-fixed border-collapse text-left text-xs">
+                    <colgroup>
+                      <col style={{ width: "17%" }} />
+                      <col style={{ width: "13%" }} />
+                      <col style={{ width: "15%" }} />
+                      <col style={{ width: "11%" }} />
+                      <col style={{ width: "11%" }} />
+                      <col style={{ width: "9%" }} />
+                      <col style={{ width: "10%" }} />
+                      <col style={{ width: "14%" }} />
+                    </colgroup>
                     <thead>
                       <tr className="bg-slate-900 text-white font-extrabold uppercase text-[11px] tracking-wider">
-                        <th className="py-3.5 px-4 w-36">Entry ID</th>
-                        <th className="py-3.5 px-4 w-32">Type</th>
-                        <th className="py-3.5 px-4">Datetime / Ref</th>
-                        <th className="py-3.5 px-4 text-right">Total Debit</th>
-                        <th className="py-3.5 px-4 text-right">Total Credit</th>
-                        <th className="py-3.5 px-4 text-center">Status</th>
-                        <th className="py-3.5 px-4 w-20 text-right">Actions</th>
+                        <th className="py-3.5 px-3">Entry ID</th>
+                        <th className="py-3.5 px-3">Type</th>
+                        <th className="py-3.5 px-3">Datetime / Ref</th>
+                        <th className="py-3.5 px-3 text-right">Total Debit</th>
+                        <th className="py-3.5 px-3 text-right">Total Credit</th>
+                        <th className="py-3.5 px-3">Status</th>
+                        <th className="py-3.5 px-4">Creator</th>
+                        <th className="py-3.5 px-3 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
                       {journalEntries.length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="py-8 text-center text-slate-400">
+                          <td colSpan={8} className="py-8 text-center text-slate-400">
                             No recorded Journal Entries. Click "Create New Entry" to record your first entry.
                           </td>
                         </tr>
                       ) : (
                         journalEntries.map((entry) => (
                           <tr key={entry.id} className="hover:bg-slate-50">
-                            <td className="py-3 px-4 font-mono font-bold text-blue-600">{entry.id}</td>
-                            <td className="py-3 px-4 font-extrabold text-slate-900">{entry.entryTypeName}</td>
-                            <td className="py-3 px-4">
+                            <td className="py-3 px-3">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedVoucher(entry)}
+                                className="whitespace-nowrap font-mono text-xs font-bold text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-800"
+                              >
+                                {entry.id}
+                              </button>
+                            </td>
+                            <td className="break-words py-3 px-3 font-extrabold text-slate-900">{entry.entryTypeName}</td>
+                            <td className="py-3 px-3 text-[10px]">
                               <p className="font-bold text-slate-900">{entry.datetime}</p>
                               {entry.reference && <p className="text-[10px] text-slate-400 font-mono">Ref: {entry.reference}</p>}
                             </td>
-                            <td className="py-3 px-4 text-right font-mono font-bold text-slate-900">{entry.totalDebit.toFixed(3)}</td>
-                            <td className="py-3 px-4 text-right font-mono font-bold text-slate-900">{entry.totalCredit.toFixed(3)}</td>
-                            <td className="py-3 px-4 text-center">
-                              <Badge variant="success">Saved</Badge>
+                            <td className="whitespace-nowrap py-3 px-3 text-right font-mono font-bold text-slate-900">{entry.totalDebit.toFixed(3)}</td>
+                            <td className="whitespace-nowrap py-3 px-3 text-right font-mono font-bold text-slate-900">{entry.totalCredit.toFixed(3)}</td>
+                            <td className="py-3 px-3">
+                              <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${entry.status === "Posted" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"}`}>{entry.status}</span>
                             </td>
-                            <td className="py-3 px-4 text-right">
-                              <button
+                            <td className="py-3 px-4">{entry.creator || "—"}</td>
+                            <td className="whitespace-nowrap py-3 px-3 text-right">
+                              {entry.status !== "Posted" && <button
+                                type="button"
+                                aria-label={`Edit voucher ${entry.id}`}
+                                title="Edit voucher"
+                                onClick={() => {
+                                  setEditingJournalEntry(entry);
+                                  setEntryTypeVal(entry.entryTypeCode);
+                                  setEntryTypeDropdownSearch("");
+                                  setFiscalYearVal(entry.fiscalYear);
+                                  setDatetimeVal(entry.datetime);
+                                  setReferenceVal(entry.reference || "");
+                                  setNotesVal(entry.notes || "");
+                                  setEntryLines(entry.lines.map((line) => ({ ...line })));
+                                  setViewEntryMode("create");
+                                }}
+                                className="mr-1 rounded-lg p-1 text-slate-400 hover:bg-blue-50 hover:text-blue-600"
+                              >
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </button>}
+                              {entry.status === "Saved" && <button
+                                type="button"
+                                aria-label={`Post voucher ${entry.id}`}
+                                title="Post voucher"
+                                onClick={() => void handlePostJournalEntry(entry)}
+                                className="mr-1 rounded-lg px-2 py-1 text-[10px] font-bold text-emerald-700 hover:bg-emerald-50"
+                              >
+                                Post
+                              </button>}
+                              {entry.status !== "Posted" && <button
+                                type="button"
                                 onClick={() =>
                                   setDeleteTarget({
                                     type: "journal-entry",
@@ -1024,7 +1294,7 @@ export function FinanceEntitiesPage({
                                 className="rounded-lg p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
-                              </button>
+                              </button>}
                             </td>
                           </tr>
                         ))
@@ -1036,6 +1306,18 @@ export function FinanceEntitiesPage({
             </div>
           )}
         </>
+      )}
+
+      {selectedVoucher && (
+        <VoucherDetailsModal
+          entry={selectedVoucher}
+          ledgers={ledgers}
+          profitCentres={profitCentres}
+          costCentres={costCentres}
+          company={activeCompany}
+          currency={activeCompany.currency}
+          onClose={() => setSelectedVoucher(null)}
+        />
       )}
 
       {/* ========================================================================= */}
@@ -1056,7 +1338,6 @@ export function FinanceEntitiesPage({
       {isEntryTypeModalOpen && (
         <EntryTypeFormModal
           editingEntryType={editingEntryType}
-          allEntryTypes={entryTypes}
           onClose={() => setIsEntryTypeModalOpen(false)}
           onSave={handleSaveEntryType}
         />
@@ -1064,12 +1345,27 @@ export function FinanceEntitiesPage({
 
       {/* MODAL: COST CENTRE */}
       {isCostCentreModalOpen && (
-        <CostCentreFormModal onClose={() => setIsCostCentreModalOpen(false)} onSave={handleSaveCostCentre} />
+        <CostCentreFormModal
+          editingCentre={editingCostCentre}
+          profitCentres={profitCentres}
+          onClose={() => {
+            setIsCostCentreModalOpen(false);
+            setEditingCostCentre(null);
+          }}
+          onSave={handleSaveCostCentre}
+        />
       )}
 
       {/* MODAL: PROFIT CENTRE */}
       {isProfitCentreModalOpen && (
-        <ProfitCentreFormModal onClose={() => setIsProfitCentreModalOpen(false)} onSave={handleSaveProfitCentre} />
+        <ProfitCentreFormModal
+          editingCentre={editingProfitCentre}
+          onClose={() => {
+            setIsProfitCentreModalOpen(false);
+            setEditingProfitCentre(null);
+          }}
+          onSave={handleSaveProfitCentre}
+        />
       )}
 
       {/* MODAL: RECYCLE BIN */}
@@ -1329,28 +1625,14 @@ function LedgerFormModal({
 
 function EntryTypeFormModal({
   editingEntryType,
-  allEntryTypes = [],
   onClose,
   onSave
 }: {
   editingEntryType: EntryTypeItem | null;
-  allEntryTypes?: EntryTypeItem[];
   onClose: () => void;
   onSave: (data: EntryTypeItem) => void;
 }) {
-  const getNextCode = () => {
-    if (editingEntryType) return editingEntryType.code;
-    let nextNum = 1001;
-    allEntryTypes.forEach((e) => {
-      const num = parseInt(e.code, 10);
-      if (!isNaN(num) && num >= nextNum) {
-        nextNum = num + 1;
-      }
-    });
-    return nextNum.toString();
-  };
-
-  const [code, setCode] = useState(editingEntryType?.code || getNextCode());
+  const [code, setCode] = useState(editingEntryType?.code || "");
   const [name, setName] = useState(editingEntryType?.name || "");
   const [description, setDescription] = useState(editingEntryType?.description || "");
 
@@ -1358,7 +1640,7 @@ function EntryTypeFormModal({
     e.preventDefault();
     if (!name.trim()) return;
     onSave({
-      code: code.trim() || getNextCode(),
+      code: code.trim(),
       name: name.trim(),
       description: description.trim()
     });
@@ -1429,17 +1711,36 @@ function EntryTypeFormModal({
   );
 }
 
-function CostCentreFormModal({ onClose, onSave }: { onClose: () => void; onSave: (data: CostCentreItem) => void }) {
-  const [code, setCode] = useState("");
-  const [name, setName] = useState("");
-  const [department, setDepartment] = useState("");
-  const [description, setDescription] = useState("");
+function CostCentreFormModal({
+  editingCentre,
+  profitCentres,
+  onClose,
+  onSave
+}: {
+  editingCentre: CostCentreItem | null;
+  profitCentres: ProfitCentreItem[];
+  onClose: () => void;
+  onSave: (data: CostCentreItem) => void;
+}) {
+  const [code, setCode] = useState(editingCentre?.code || "");
+  const [name, setName] = useState(editingCentre?.name || "");
+  const [profitCentreCode, setProfitCentreCode] = useState(editingCentre?.profitCentreCode || "");
+  const [profitCentreSearch, setProfitCentreSearch] = useState("");
+  const [profitCentreDropdownOpen, setProfitCentreDropdownOpen] = useState(false);
+  const [description, setDescription] = useState(editingCentre?.description || "");
+  const selectedProfitCentre = profitCentres.find((centre) => centre.code === profitCentreCode);
+  const filteredProfitCentres = profitCentres.filter((centre) => {
+    const searchTerm = profitCentreSearch.trim().toLowerCase();
+    return !searchTerm
+      || centre.name.toLowerCase().includes(searchTerm)
+      || centre.code.toLowerCase().includes(searchTerm);
+  });
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 animate-fade-in">
       <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-slate-100 space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <h3 className="text-base font-extrabold text-slate-900">New Cost Centre</h3>
+          <h3 className="text-base font-extrabold text-slate-900">{editingCentre ? "Edit Cost Centre" : "New Cost Centre"}</h3>
           <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:text-slate-700">
             <X className="h-5 w-5" />
           </button>
@@ -1449,15 +1750,67 @@ function CostCentreFormModal({ onClose, onSave }: { onClose: () => void; onSave:
           onSubmit={(e) => {
             e.preventDefault();
             if (!code || !name) return;
-            onSave({ code, name, department, description });
+            if (!profitCentreCode) return;
+            onSave({ code, name, profitCentreCode, description });
           }}
           className="space-y-4"
         >
+          <div className="relative">
+            <label className="block text-[11px] font-extrabold uppercase text-slate-600 mb-1">Profit Centre *</label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                role="combobox"
+                aria-label="Search profit centres"
+                aria-expanded={profitCentreDropdownOpen}
+                aria-controls="cost-centre-profit-options"
+                aria-autocomplete="list"
+                required={!profitCentreCode}
+                value={profitCentreDropdownOpen ? profitCentreSearch : selectedProfitCentre?.name || ""}
+                onFocus={() => {
+                  setProfitCentreSearch("");
+                  setProfitCentreDropdownOpen(true);
+                }}
+                onChange={(event) => {
+                  setProfitCentreSearch(event.target.value);
+                  setProfitCentreDropdownOpen(true);
+                  setProfitCentreCode("");
+                }}
+                placeholder="Select or search profit centre..."
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-xs font-bold outline-none focus:border-blue-500"
+              />
+            </div>
+            {profitCentreDropdownOpen && (
+              <div id="cost-centre-profit-options" role="listbox" className="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                {filteredProfitCentres.length ? filteredProfitCentres.map((centre) => (
+                  <button
+                    key={centre.code}
+                    type="button"
+                    role="option"
+                    aria-selected={centre.code === profitCentreCode}
+                    onClick={() => {
+                      setProfitCentreCode(centre.code);
+                      setProfitCentreSearch("");
+                      setProfitCentreDropdownOpen(false);
+                    }}
+                    className="block w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-blue-50"
+                  >
+                    {centre.name}
+                  </button>
+                )) : (
+                  <p className="px-3 py-2 text-xs text-slate-500">No matching profit centres.</p>
+                )}
+              </div>
+            )}
+          </div>
+
           <div>
             <label className="block text-[11px] font-extrabold uppercase text-slate-600 mb-1">Cost Centre Code *</label>
             <input
               type="text"
               required
+              disabled={!!editingCentre}
               placeholder="e.g. CC-104"
               value={code}
               onChange={(e) => setCode(e.target.value)}
@@ -1478,17 +1831,6 @@ function CostCentreFormModal({ onClose, onSave }: { onClose: () => void; onSave:
           </div>
 
           <div>
-            <label className="block text-[11px] font-extrabold uppercase text-slate-600 mb-1">Department</label>
-            <input
-              type="text"
-              placeholder="e.g. Commercial"
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-              className="h-10 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none"
-            />
-          </div>
-
-          <div>
             <label className="block text-[11px] font-extrabold uppercase text-slate-600 mb-1">Description</label>
             <textarea
               rows={2}
@@ -1503,7 +1845,7 @@ function CostCentreFormModal({ onClose, onSave }: { onClose: () => void; onSave:
               Close
             </Button>
             <Button type="submit" variant="primary" className="bg-blue-600 text-white font-bold">
-              Save Cost Centre
+              {editingCentre ? "Update Cost Centre" : "Save Cost Centre"}
             </Button>
           </div>
         </form>
@@ -1512,17 +1854,24 @@ function CostCentreFormModal({ onClose, onSave }: { onClose: () => void; onSave:
   );
 }
 
-function ProfitCentreFormModal({ onClose, onSave }: { onClose: () => void; onSave: (data: ProfitCentreItem) => void }) {
-  const [code, setCode] = useState("");
-  const [name, setName] = useState("");
-  const [businessUnit, setBusinessUnit] = useState("");
-  const [description, setDescription] = useState("");
+function ProfitCentreFormModal({
+  editingCentre,
+  onClose,
+  onSave
+}: {
+  editingCentre: ProfitCentreItem | null;
+  onClose: () => void;
+  onSave: (data: ProfitCentreItem) => void;
+}) {
+  const [code, setCode] = useState(editingCentre?.code || "");
+  const [name, setName] = useState(editingCentre?.name || "");
+  const [description, setDescription] = useState(editingCentre?.description || "");
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 animate-fade-in">
       <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-slate-100 space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <h3 className="text-base font-extrabold text-slate-900">New Profit Centre</h3>
+          <h3 className="text-base font-extrabold text-slate-900">{editingCentre ? "Edit Profit Centre" : "New Profit Centre"}</h3>
           <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:text-slate-700">
             <X className="h-5 w-5" />
           </button>
@@ -1532,7 +1881,7 @@ function ProfitCentreFormModal({ onClose, onSave }: { onClose: () => void; onSav
           onSubmit={(e) => {
             e.preventDefault();
             if (!code || !name) return;
-            onSave({ code, name, businessUnit, description });
+            onSave({ code, name, description });
           }}
           className="space-y-4"
         >
@@ -1541,6 +1890,7 @@ function ProfitCentreFormModal({ onClose, onSave }: { onClose: () => void; onSav
             <input
               type="text"
               required
+              disabled={!!editingCentre}
               placeholder="e.g. PC-400"
               value={code}
               onChange={(e) => setCode(e.target.value)}
@@ -1561,17 +1911,6 @@ function ProfitCentreFormModal({ onClose, onSave }: { onClose: () => void; onSav
           </div>
 
           <div>
-            <label className="block text-[11px] font-extrabold uppercase text-slate-600 mb-1">Business Unit</label>
-            <input
-              type="text"
-              placeholder="e.g. Cloud & SaaS"
-              value={businessUnit}
-              onChange={(e) => setBusinessUnit(e.target.value)}
-              className="h-10 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none"
-            />
-          </div>
-
-          <div>
             <label className="block text-[11px] font-extrabold uppercase text-slate-600 mb-1">Description</label>
             <textarea
               rows={2}
@@ -1586,10 +1925,223 @@ function ProfitCentreFormModal({ onClose, onSave }: { onClose: () => void; onSav
               Close
             </Button>
             <Button type="submit" variant="primary" className="bg-blue-600 text-white font-bold">
-              Save Profit Centre
+              {editingCentre ? "Update Profit Centre" : "Save Profit Centre"}
             </Button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+function VoucherDetailsModal({
+  entry,
+  ledgers,
+  profitCentres,
+  costCentres,
+  company,
+  currency,
+  onClose
+}: {
+  entry: JournalEntryRecord;
+  ledgers: LedgerItem[];
+  profitCentres: ProfitCentreItem[];
+  costCentres: CostCentreItem[];
+  company: Company;
+  currency: string;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-3 shadow-2xl sm:p-5">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-bold text-slate-800">Entry Details</h2>
+          <button type="button" onClick={onClose} aria-label="Close voucher details" className="rounded p-1 text-slate-500 hover:bg-slate-100">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="rounded-lg border border-slate-200 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-t-lg bg-slate-700 px-3 py-2 text-white">
+            <h3 className="text-sm font-bold">Entry #{entry.id}</h3>
+            <Button size="sm" variant="primary" onClick={() => window.print()} className="h-8 text-xs print:hidden">
+              Print Entry
+            </Button>
+          </div>
+
+          <div className="grid border-b border-slate-200 text-[11px] sm:grid-cols-2">
+            <div className="grid grid-cols-2 border-b border-slate-100 sm:border-r">
+              <span className="border-r border-slate-100 p-2 font-bold">Entry Type</span>
+              <span className="p-2 font-semibold">{entry.entryTypeName}</span>
+            </div>
+            <div className="grid grid-cols-2 border-b border-slate-100">
+              <span className="border-r border-slate-100 p-2 font-bold">Fiscal Year</span>
+              <span className="p-2 font-semibold">{entry.fiscalYear}</span>
+            </div>
+            <div className="grid grid-cols-2 border-b border-slate-100 sm:border-b-0 sm:border-r">
+              <span className="border-r border-slate-100 p-2 font-bold">Reference</span>
+              <span className="p-2 font-semibold">{entry.reference || "—"}</span>
+            </div>
+            <div className="grid grid-cols-2">
+              <span className="border-r border-slate-100 p-2 font-bold">Datetime</span>
+              <span className="p-2 font-semibold">{entry.datetime}</span>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[850px] border-collapse text-left text-[11px]">
+              <thead>
+                <tr className="bg-slate-700 font-bold text-white">
+                  <th className="border border-slate-200 px-2 py-2">SL</th>
+                  <th className="border border-slate-200 px-2 py-2">Class</th>
+                  <th className="border border-slate-200 px-2 py-2">Profit Centre</th>
+                  <th className="border border-slate-200 px-2 py-2">Cost Centre</th>
+                  <th className="border border-slate-200 px-2 py-2">Ledger</th>
+                  <th className="border border-slate-200 px-2 py-2 text-right">Debit</th>
+                  <th className="border border-slate-200 px-2 py-2 text-right">Credit</th>
+                  <th className="border border-slate-200 px-2 py-2">Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entry.lines.map((line, index) => {
+                  const ledger = ledgers.find((item) => item.code === line.ledgerCode);
+                  const profitCentre = profitCentres.find((item) => item.code === line.profitCentreCode);
+                  const costCentre = costCentres.find((item) => item.code === line.costCentreCode);
+                  return (
+                    <tr key={line.id ?? `${entry.id}-${index}`} className="text-slate-700">
+                      <td className="border border-slate-200 px-2 py-2 text-center">{index + 1}</td>
+                      <td className="border border-slate-200 px-2 py-2">{ledger?.class || "—"}</td>
+                      <td className="border border-slate-200 px-2 py-2">{profitCentre?.name || line.profitCentreCode || "—"}</td>
+                      <td className="border border-slate-200 px-2 py-2">{costCentre?.name || line.costCentreCode || "—"}</td>
+                      <td className="border border-slate-200 px-2 py-2">
+                        {ledger ? `[${ledger.code}] ${ledger.name}` : line.ledgerName || line.ledgerCode || "—"}
+                      </td>
+                      <td className="border border-slate-200 px-2 py-2 text-right">{line.debit ? line.debit.toFixed(3) : ""}</td>
+                      <td className="border border-slate-200 px-2 py-2 text-right">{line.credit ? line.credit.toFixed(3) : ""}</td>
+                      <td className="border border-slate-200 px-2 py-2">{line.notes || ""}</td>
+                    </tr>
+                  );
+                })}
+                <tr className="font-bold text-slate-800">
+                  <td colSpan={5} className="border border-slate-200 px-2 py-2 text-right">Total ({currency})</td>
+                  <td className="border border-slate-200 px-2 py-2 text-right">{entry.totalDebit.toFixed(3)}</td>
+                  <td className="border border-slate-200 px-2 py-2 text-right">{entry.totalCredit.toFixed(3)}</td>
+                  <td className="border border-slate-200 px-2 py-2" />
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="p-3">
+            <h4 className="mb-1 text-sm font-bold text-slate-800">Notes:</h4>
+            <p className="whitespace-pre-wrap text-xs text-slate-700">{entry.notes || "—"}</p>
+          </div>
+        </div>
+
+        <div className="mt-4 flex justify-end">
+          <Button type="button" variant="secondary" onClick={onClose} className="bg-rose-600 text-white hover:bg-rose-700">
+            Close
+          </Button>
+        </div>
+      </div>
+
+      <div id="voucher-print-document" aria-hidden="true">
+        <header className="voucher-print-header">
+          <img src={company.logoUrl || "/ggms-logo-horizontal.png"} alt={`${company.name} logo`} />
+          <div className="voucher-print-header-company">
+            <h1>{company.name}</h1>
+            {company.branch && <p>{company.branch}</p>}
+          </div>
+        </header>
+
+        <h2 className="voucher-print-title">Entry #{entry.id}</h2>
+        <table className="voucher-print-metadata">
+          <tbody>
+            <tr>
+              <th>Entry Type</th>
+              <td>{entry.entryTypeName}</td>
+              <th>Fiscal Year</th>
+              <td>{entry.fiscalYear}</td>
+            </tr>
+            <tr>
+              <th>Reference</th>
+              <td>{entry.reference || "—"}</td>
+              <th>Datetime</th>
+              <td>{entry.datetime}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table className="voucher-print-lines">
+          <thead>
+            <tr>
+              <th>SL</th>
+              <th>Class</th>
+              <th>Profit Centre</th>
+              <th>Cost Centre</th>
+              <th>Ledger</th>
+              <th>Debit ({currency})</th>
+              <th>Credit ({currency})</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entry.lines.map((line, index) => {
+              const ledger = ledgers.find((item) => item.code === line.ledgerCode);
+              const profitCentre = profitCentres.find((item) => item.code === line.profitCentreCode);
+              const costCentre = costCentres.find((item) => item.code === line.costCentreCode);
+              return (
+                <tr key={line.id ?? `${entry.id}-print-${index}`}>
+                  <td>{index + 1}</td>
+                  <td>{ledger?.class || "—"}</td>
+                  <td>{profitCentre?.name || line.profitCentreCode || "—"}</td>
+                  <td>{costCentre?.name || line.costCentreCode || "—"}</td>
+                  <td>{ledger ? `[${ledger.code}] ${ledger.name}` : line.ledgerName || line.ledgerCode || "—"}</td>
+                  <td>{line.debit ? line.debit.toFixed(3) : ""}</td>
+                  <td>{line.credit ? line.credit.toFixed(3) : ""}</td>
+                  <td>{line.notes || ""}</td>
+                </tr>
+              );
+            })}
+            <tr className="voucher-print-total">
+              <td colSpan={5}>Total</td>
+              <td>{entry.totalDebit.toFixed(3)}</td>
+              <td>{entry.totalCredit.toFixed(3)}</td>
+              <td />
+            </tr>
+          </tbody>
+        </table>
+
+        <section className="voucher-print-notes">
+          <strong>Notes:</strong>
+          <p>{entry.notes || " "}</p>
+        </section>
+
+        <section className="voucher-print-signatures">
+          <div>
+            <strong>Entry By</strong>
+            <span>{entry.creator || "—"}</span>
+          </div>
+          <div>
+            <strong>Approved By</strong>
+            <span>________________________</span>
+          </div>
+        </section>
+
+        <footer className="voucher-print-footer">
+          {company.address && <span>{company.address}</span>}
+          <div>
+            {[
+              company.contactNo && `Tel: ${company.contactNo}`,
+              company.email && `Email: ${company.email}`
+            ].filter(Boolean).join("  |  ")}
+          </div>
+        </footer>
       </div>
     </div>
   );
