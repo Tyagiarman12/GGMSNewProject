@@ -173,8 +173,9 @@ export type CostCentreItem = {
   code: string;
   companyId?: string;
   name: string;
-  department?: string;
+  profitCentreCode: string;
   description?: string;
+  creator?: string;
 };
 
 export type ProfitCentreItem = {
@@ -183,6 +184,7 @@ export type ProfitCentreItem = {
   name: string;
   businessUnit?: string;
   description?: string;
+  creator?: string;
 };
 
 export type JournalEntryLineItem = {
@@ -202,6 +204,7 @@ export type JournalEntryRecord = {
   companyId?: string;
   entryTypeCode: string;
   entryTypeName: string;
+  creator?: string;
   fiscalYear: string;
   datetime: string;
   reference?: string;
@@ -212,4 +215,3 @@ export type JournalEntryRecord = {
   status: string;
   lines: JournalEntryLineItem[];
 };
-

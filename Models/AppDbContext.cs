@@ -34,6 +34,8 @@ namespace GGMSNEWPROJECT.Models
         public DbSet<Employee> Employees { get; set; } = null!;
         public DbSet<EmployeeTask> EmployeeTasks { get; set; } = null!;
         public DbSet<Expense> Expenses { get; set; } = null!;
+        public DbSet<CustomerPayment> CustomerPayments { get; set; } = null!;
+        public DbSet<SupplierPayment> SupplierPayments { get; set; } = null!;
         public DbSet<Renewal> Renewals { get; set; } = null!;
         public DbSet<Asset> Assets { get; set; } = null!;
         public DbSet<Credential> Credentials { get; set; } = null!;
@@ -301,4 +303,3 @@ namespace GGMSNEWPROJECT.Models
         }
     }
 }
-

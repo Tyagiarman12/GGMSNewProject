@@ -56,6 +56,7 @@ namespace GGMSNEWPROJECT.Controllers
                 var response = new LoginResponse
                 {
                     Id = user.Id,
+                    Name = string.IsNullOrWhiteSpace(user.Name) ? user.Email : user.Name,
                     Email = user.Email,
                     Role = user.Role,
                     CompanyId = user.CompanyId,
@@ -142,6 +143,7 @@ namespace GGMSNEWPROJECT.Controllers
             // Create new user
             var newUser = new User
             {
+                Name = string.IsNullOrWhiteSpace(request.Name) ? request.Email : request.Name.Trim(),
                 Email = request.Email,
                 PasswordHash = passwordHash,
                 Role = "User",
@@ -166,6 +168,7 @@ namespace GGMSNEWPROJECT.Controllers
 
     public class RegisterRequest
     {
+        public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
     }
@@ -173,6 +176,7 @@ namespace GGMSNEWPROJECT.Controllers
     public class LoginResponse
     {
         public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
         public string CompanyId { get; set; } = string.Empty;

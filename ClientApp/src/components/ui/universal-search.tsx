@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useId, useMemo } from "react";
 import { Search, X, Check, Package, FileText, ChevronDown } from "lucide-react";
 import type { ProductItem } from "../../modules/shared/domain";
 
@@ -744,6 +744,192 @@ export function UniversalUserSearch({
                 </div>
               );
             })
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export interface SearchableSelectOption {
+  value: string;
+  label: string;
+  searchText?: string;
+}
+
+interface SearchableSelectProps {
+  value: string;
+  options: SearchableSelectOption[];
+  onChange: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+  ariaLabel: string;
+  required?: boolean;
+  allowClear?: boolean;
+}
+
+export function SearchableSelect({
+  value,
+  options,
+  onChange,
+  placeholder = "Search or select...",
+  className = "",
+  ariaLabel,
+  required = false,
+  allowClear = false
+}: SearchableSelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [focusedIndex, setFocusedIndex] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listboxId = useId();
+  const selectedOption = options.find((option) => option.value === value);
+
+  const filteredOptions = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return options;
+
+    return options.filter((option) =>
+      `${option.label} ${option.value} ${option.searchText || ""}`.toLowerCase().includes(term)
+    );
+  }, [options, searchTerm]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+        setSearchTerm("");
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const hasUnselectedSearch = searchTerm.trim().length > 0;
+    const needsSelection = hasUnselectedSearch || (required && !selectedOption);
+    inputRef.current?.setCustomValidity(needsSelection ? "Select an option from the list." : "");
+  }, [required, searchTerm, selectedOption]);
+
+  function selectOption(option: SearchableSelectOption) {
+    onChange(option.value);
+    setSearchTerm("");
+    setIsOpen(false);
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (!isOpen) setIsOpen(true);
+      setFocusedIndex((index) => Math.min(index + 1, filteredOptions.length - 1));
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setFocusedIndex((index) => Math.max(index - 1, 0));
+    } else if (event.key === "Enter" && isOpen) {
+      event.preventDefault();
+      const option = filteredOptions[focusedIndex];
+      if (option) selectOption(option);
+    } else if (event.key === "Escape") {
+      setIsOpen(false);
+      setSearchTerm("");
+    }
+  }
+
+  return (
+    <div ref={containerRef} className={`relative w-full ${isOpen ? "z-[999]" : ""}`}>
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <input
+          ref={inputRef}
+          type="text"
+          role="combobox"
+          aria-label={ariaLabel}
+          aria-autocomplete="list"
+          aria-expanded={isOpen}
+          aria-controls={listboxId}
+          aria-required={required}
+          value={isOpen ? searchTerm : selectedOption?.label || ""}
+          onChange={(event) => {
+            setSearchTerm(event.target.value);
+            setFocusedIndex(0);
+            setIsOpen(true);
+          }}
+          onFocus={() => {
+            setSearchTerm("");
+            setFocusedIndex(0);
+            setIsOpen(true);
+          }}
+          onKeyDown={handleKeyDown}
+          placeholder={isOpen ? "Type to search..." : placeholder}
+          autoComplete="off"
+          className={`block h-10 w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-20 text-sm text-slate-800 outline-none transition-all hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 ${className}`}
+        />
+        <div className="absolute inset-y-0 right-2 flex items-center gap-1">
+          {allowClear && selectedOption && (
+            <button
+              type="button"
+              aria-label={`Clear ${ariaLabel}`}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                onChange("");
+                setSearchTerm("");
+                setIsOpen(false);
+              }}
+              className="rounded p-1 text-slate-400 hover:text-rose-500"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <button
+            type="button"
+            aria-label={`${isOpen ? "Close" : "Open"} ${ariaLabel} options`}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              setIsOpen((open) => !open);
+              setSearchTerm("");
+              setFocusedIndex(0);
+            }}
+            className="rounded p-1 text-slate-400 hover:text-slate-600"
+          >
+            <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+          </button>
+        </div>
+      </div>
+
+      {isOpen && (
+        <div
+          id={listboxId}
+          role="listbox"
+          className="absolute top-full z-[9999] mt-1.5 max-h-[280px] w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl"
+        >
+          {filteredOptions.length === 0 ? (
+            <div className="p-3 text-center text-xs font-semibold text-slate-400">
+              No options found for "{searchTerm}"
+            </div>
+          ) : (
+            filteredOptions.map((option, index) => (
+              <button
+                key={option.value}
+                type="button"
+                role="option"
+                aria-selected={option.value === value}
+                onMouseEnter={() => setFocusedIndex(index)}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => selectOption(option)}
+                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs transition-colors ${
+                  option.value === value
+                    ? "bg-blue-50 font-bold text-blue-900"
+                    : index === focusedIndex
+                      ? "bg-slate-100 text-slate-900"
+                      : "text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                <span>{option.label}</span>
+                {option.value === value && <Check className="ml-2 h-3.5 w-3.5 shrink-0 text-blue-600" />}
+              </button>
+            ))
           )}
         </div>
       )}

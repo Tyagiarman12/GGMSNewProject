@@ -2,7 +2,6 @@ using GGMSNEWPROJECT.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -30,35 +29,6 @@ namespace GGMSNEWPROJECT.Controllers
                 .Where(l => l.CompanyId == targetCompanyId || l.CompanyId == "ggms-oman")
                 .OrderBy(l => l.Code)
                 .ToListAsync();
-
-            if (!ledgers.Any())
-            {
-                var defaultLedgers = new List<Ledger>
-                {
-                    new Ledger { Code = "1002", Name = "Fixed Assets", Class = "Asset", ParentCode = "No Parent", IsRetainedEarnings = false, CompanyId = "ggms-oman", Description = "Fixed Assets Group" },
-                    new Ledger { Code = "100201", Name = "Machinery & Equipment", Class = "Asset", ParentCode = "1002", IsRetainedEarnings = false, CompanyId = "ggms-oman", Description = "Machinery & Equipment" },
-                    new Ledger { Code = "100202", Name = "Rental Equipment", Class = "Asset", ParentCode = "1002", IsRetainedEarnings = false, CompanyId = "ggms-oman", Description = "Rental Equipment" },
-                    new Ledger { Code = "100203", Name = "Tools & Instruments", Class = "Asset", ParentCode = "1002", IsRetainedEarnings = false, CompanyId = "ggms-oman", Description = "Tools & Instruments" },
-                    new Ledger { Code = "100204", Name = "Vehicles", Class = "Asset", ParentCode = "1002", IsRetainedEarnings = false, CompanyId = "ggms-oman", Description = "Vehicles" },
-                    new Ledger { Code = "100205", Name = "Office Equipment", Class = "Asset", ParentCode = "1002", IsRetainedEarnings = false, CompanyId = "ggms-oman", Description = "Office Equipment" },
-                    new Ledger { Code = "100206", Name = "Accumulated Depreciation", Class = "Asset", ParentCode = "1002", IsRetainedEarnings = false, CompanyId = "ggms-oman", Description = "Accumulated Depreciation" },
-
-                    new Ledger { Code = "1001", Name = "Current Asset", Class = "Asset", ParentCode = "No Parent", IsRetainedEarnings = false, CompanyId = "ggms-oman", Description = "Current Asset Group" },
-                    new Ledger { Code = "10001", Name = "Main Bank Account", Class = "Asset", ParentCode = "1001", IsRetainedEarnings = false, CompanyId = "ggms-oman", Description = "Main Bank Account" },
-
-                    new Ledger { Code = "2002", Name = "Long-Term Liabilities", Class = "Liability", ParentCode = "No Parent", IsRetainedEarnings = false, CompanyId = "ggms-oman", Description = "Long-Term Liabilities Group" },
-                    new Ledger { Code = "200201", Name = "Bank Loan", Class = "Liability", ParentCode = "2002", IsRetainedEarnings = false, CompanyId = "ggms-oman", Description = "Bank Loan" },
-                    new Ledger { Code = "200202", Name = "Equipment Financing", Class = "Liability", ParentCode = "2002", IsRetainedEarnings = false, CompanyId = "ggms-oman", Description = "Equipment Financing" },
-
-                    new Ledger { Code = "3001", Name = "Equity", Class = "Equity", ParentCode = "No Parent", IsRetainedEarnings = false, CompanyId = "ggms-oman", Description = "Equity Group" },
-                    new Ledger { Code = "300101", Name = "Owner's Capital", Class = "Equity", ParentCode = "3001", IsRetainedEarnings = false, CompanyId = "ggms-oman", Description = "Owner's Capital" },
-                    new Ledger { Code = "300102", Name = "Retained Earnings", Class = "Equity", ParentCode = "3001", IsRetainedEarnings = true, CompanyId = "ggms-oman", Description = "Retained Earnings" }
-                };
-
-                _context.Ledgers.AddRange(defaultLedgers);
-                await _context.SaveChangesAsync();
-                ledgers = defaultLedgers;
-            }
 
             return Ok(ledgers);
         }
@@ -105,6 +75,10 @@ namespace GGMSNEWPROJECT.Controllers
         {
             var item = await _context.Ledgers.FindAsync(code);
             if (item == null) return NotFound();
+            if (await _context.JournalEntryLines.AnyAsync(line => line.LedgerCode == code))
+            {
+                return Conflict("Ledger is used by a journal entry and cannot be deleted.");
+            }
 
             _context.Ledgers.Remove(item);
             await _context.SaveChangesAsync();
@@ -147,7 +121,7 @@ namespace GGMSNEWPROJECT.Controllers
             {
                 existing.Name = entryType.Name;
                 existing.Description = entryType.Description ?? string.Empty;
-                existing.Editor = "Tatweer Admin (Tatweer-Admin)";
+                existing.Editor = string.IsNullOrWhiteSpace(entryType.Editor) ? entryType.Creator : entryType.Editor;
                 _context.EntryTypes.Update(existing);
             }
             else
@@ -156,7 +130,10 @@ namespace GGMSNEWPROJECT.Controllers
                 {
                     entryType.CompanyId = "ggms-oman";
                 }
-                entryType.Creator = "Tatweer Admin (Tatweer-Admin)";
+                if (string.IsNullOrWhiteSpace(entryType.Creator))
+                {
+                    return BadRequest("Entry Type Creator is required.");
+                }
                 entryType.CreatedAt = DateTime.Now;
                 _context.EntryTypes.Add(entryType);
             }
@@ -170,6 +147,10 @@ namespace GGMSNEWPROJECT.Controllers
         {
             var item = await _context.EntryTypes.FindAsync(code);
             if (item == null) return NotFound();
+            if (await _context.JournalEntries.AnyAsync(entry => entry.EntryTypeCode == code))
+            {
+                return Conflict("Entry type is used by a journal entry and cannot be deleted.");
+            }
 
             _context.EntryTypes.Remove(item);
             await _context.SaveChangesAsync();
@@ -196,12 +177,20 @@ namespace GGMSNEWPROJECT.Controllers
             {
                 return BadRequest("Cost Centre Code is required.");
             }
+            if (string.IsNullOrWhiteSpace(costCentre.Creator))
+            {
+                return BadRequest("Cost Centre Creator is required.");
+            }
+            if (string.IsNullOrWhiteSpace(costCentre.ProfitCentreCode))
+            {
+                return BadRequest("Profit Centre is required.");
+            }
 
             var existing = await _context.CostCentres.FindAsync(costCentre.Code);
             if (existing != null)
             {
                 existing.Name = costCentre.Name;
-                existing.Department = costCentre.Department;
+                existing.ProfitCentreCode = costCentre.ProfitCentreCode;
                 existing.Description = costCentre.Description;
                 _context.CostCentres.Update(existing);
             }
@@ -220,6 +209,10 @@ namespace GGMSNEWPROJECT.Controllers
         {
             var item = await _context.CostCentres.FindAsync(code);
             if (item == null) return NotFound();
+            if (await _context.JournalEntryLines.AnyAsync(line => line.CostCentreCode == code))
+            {
+                return Conflict("Cost centre is used by a journal entry and cannot be deleted.");
+            }
 
             _context.CostCentres.Remove(item);
             await _context.SaveChangesAsync();
@@ -246,6 +239,10 @@ namespace GGMSNEWPROJECT.Controllers
             {
                 return BadRequest("Profit Centre Code is required.");
             }
+            if (string.IsNullOrWhiteSpace(profitCentre.Creator))
+            {
+                return BadRequest("Profit Centre Creator is required.");
+            }
 
             var existing = await _context.ProfitCentres.FindAsync(profitCentre.Code);
             if (existing != null)
@@ -270,6 +267,10 @@ namespace GGMSNEWPROJECT.Controllers
         {
             var item = await _context.ProfitCentres.FindAsync(code);
             if (item == null) return NotFound();
+            if (await _context.JournalEntryLines.AnyAsync(line => line.ProfitCentreCode == code))
+            {
+                return Conflict("Profit centre is used by a journal entry and cannot be deleted.");
+            }
 
             _context.ProfitCentres.Remove(item);
             await _context.SaveChangesAsync();
@@ -294,30 +295,34 @@ namespace GGMSNEWPROJECT.Controllers
         [HttpPost("entries")]
         public async Task<IActionResult> CreateJournalEntry([FromBody] JournalEntry entry)
         {
-            if (string.IsNullOrWhiteSpace(entry.Id))
+            if (string.IsNullOrWhiteSpace(entry.Creator))
             {
-                entry.Id = $"JV-{DateTime.Now:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 4).ToUpper()}";
+                return BadRequest("Voucher Creator is required.");
             }
-
             if (string.IsNullOrWhiteSpace(entry.CompanyId))
             {
-                entry.CompanyId = "ggms-oman";
+                entry.CompanyId = _context.CurrentCompanyId;
+            }
+            var validationError = await ValidateJournalEntryAsync(entry);
+            if (validationError != null)
+            {
+                return BadRequest(validationError);
             }
 
+            var voucherPrefix = GetVoucherPrefix(entry.EntryTypeName);
+            var entryIdSuffix = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+            entry.Id = $"{voucherPrefix}-{DateTime.Now:yyyyMMdd}-{entryIdSuffix}";
             if (string.IsNullOrWhiteSpace(entry.Datetime))
             {
                 entry.Datetime = DateTime.Now.ToString("dd/MM/yyyy, hh:mm:ss tt");
             }
 
-            // Calculate totals from lines
-            if (entry.Lines != null && entry.Lines.Any())
+            entry.TotalDebit = entry.Lines.Sum(line => line.Debit);
+            entry.TotalCredit = entry.Lines.Sum(line => line.Credit);
+            entry.Status = "Saved";
+            foreach (var line in entry.Lines)
             {
-                entry.TotalDebit = entry.Lines.Sum(l => l.Debit);
-                entry.TotalCredit = entry.Lines.Sum(l => l.Credit);
-                foreach (var line in entry.Lines)
-                {
-                    line.JournalEntryId = entry.Id;
-                }
+                line.JournalEntryId = entry.Id;
             }
 
             _context.JournalEntries.Add(entry);
@@ -333,11 +338,120 @@ namespace GGMSNEWPROJECT.Controllers
             return Ok(entry);
         }
 
+        private static string GetVoucherPrefix(string entryTypeName)
+        {
+            if (entryTypeName.Contains("journal", StringComparison.OrdinalIgnoreCase))
+            {
+                return "JV";
+            }
+
+            var words = entryTypeName
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Select(word => new string(word.Where(char.IsLetter).ToArray()))
+                .Where(word => word.Length > 0)
+                .ToList();
+
+            if (words.Any(word => word.Equals("payment", StringComparison.OrdinalIgnoreCase)))
+            {
+                return "PV";
+            }
+
+            var prefix = string.Concat(words.Take(3).Select(word => char.ToUpperInvariant(word[0])));
+            return string.IsNullOrEmpty(prefix) ? "EV" : prefix;
+        }
+
+        [HttpPut("entries/{id}")]
+        public async Task<IActionResult> UpdateJournalEntry(string id, [FromBody] JournalEntry entry)
+        {
+            var existingEntry = await _context.JournalEntries
+                .Include(e => e.Lines)
+                .FirstOrDefaultAsync(e => e.Id == id);
+            if (existingEntry == null) return NotFound();
+            if (existingEntry.Status == "Posted")
+            {
+                return Conflict("Posted journal entries cannot be edited.");
+            }
+
+            var validationError = await ValidateJournalEntryAsync(entry);
+            if (validationError != null)
+            {
+                return BadRequest(validationError);
+            }
+
+            existingEntry.EntryTypeCode = entry.EntryTypeCode;
+            existingEntry.EntryTypeName = entry.EntryTypeName;
+            existingEntry.FiscalYear = entry.FiscalYear;
+            existingEntry.Datetime = entry.Datetime;
+            existingEntry.Reference = entry.Reference;
+            existingEntry.AttachmentUrl = entry.AttachmentUrl;
+            existingEntry.Notes = entry.Notes;
+
+            var updatedLines = (entry.Lines ?? new List<JournalEntryLine>())
+                .Select(line => new JournalEntryLine
+                {
+                    JournalEntryId = existingEntry.Id,
+                    ProfitCentreCode = line.ProfitCentreCode,
+                    CostCentreCode = line.CostCentreCode,
+                    LedgerCode = line.LedgerCode,
+                    LedgerName = line.LedgerName,
+                    Debit = line.Debit,
+                    Credit = line.Credit,
+                    Notes = line.Notes
+                })
+                .ToList();
+
+            _context.JournalEntryLines.RemoveRange(existingEntry.Lines);
+            existingEntry.Lines = updatedLines;
+            existingEntry.TotalDebit = updatedLines.Sum(line => line.Debit);
+            existingEntry.TotalCredit = updatedLines.Sum(line => line.Credit);
+            existingEntry.Status = "Saved";
+
+            await _context.SaveChangesAsync();
+            return Ok(existingEntry);
+        }
+
+        [HttpPut("entries/{id}/status")]
+        public async Task<IActionResult> PostJournalEntry(string id, [FromBody] string status)
+        {
+            if (!string.Equals(status?.Trim(), "Posted", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest("Only the Posted status is supported.");
+            }
+
+            var entry = await _context.JournalEntries
+                .Include(item => item.Lines)
+                .FirstOrDefaultAsync(item => item.Id == id);
+            if (entry == null) return NotFound();
+            if (entry.Status != "Saved")
+            {
+                return Conflict($"Journal entry cannot be posted from status {entry.Status}.");
+            }
+            var validationError = await ValidateJournalEntryAsync(entry);
+            if (validationError != null)
+            {
+                return BadRequest(validationError);
+            }
+
+            entry.Status = "Posted";
+            _context.TimelineEvents.Add(new TimelineEvent
+            {
+                Timestamp = DateTime.Now,
+                CompanyId = entry.CompanyId,
+                Message = $"Journal entry {entry.Id} was posted."
+            });
+            await _context.SaveChangesAsync();
+            return Ok(entry);
+        }
+
         [HttpDelete("entries/{id}")]
         public async Task<IActionResult> DeleteJournalEntry(string id)
         {
             var entry = await _context.JournalEntries.Include(e => e.Lines).FirstOrDefaultAsync(e => e.Id == id);
             if (entry == null) return NotFound();
+            if (entry.Status == "Posted")
+            {
+                return Conflict("Posted journal entries cannot be deleted.");
+            }
 
             if (entry.Lines != null && entry.Lines.Any())
             {
@@ -346,6 +460,51 @@ namespace GGMSNEWPROJECT.Controllers
             _context.JournalEntries.Remove(entry);
             await _context.SaveChangesAsync();
             return Ok(new { message = "Journal Entry deleted" });
+        }
+
+        private async Task<string?> ValidateJournalEntryAsync(JournalEntry entry)
+        {
+            if (entry.Lines == null || entry.Lines.Count < 2)
+            {
+                return "A journal entry must contain at least two lines.";
+            }
+            if (string.IsNullOrWhiteSpace(entry.EntryTypeCode) || string.IsNullOrWhiteSpace(entry.EntryTypeName))
+            {
+                return "Entry type is required.";
+            }
+
+            foreach (var line in entry.Lines)
+            {
+                if (string.IsNullOrWhiteSpace(line.LedgerCode))
+                {
+                    return "Every journal line must have a ledger account.";
+                }
+                if (line.Debit < 0 || line.Credit < 0 || (line.Debit > 0) == (line.Credit > 0))
+                {
+                    return "Each journal line must have a positive debit or credit, but not both.";
+                }
+            }
+
+            var debit = entry.Lines.Sum(line => line.Debit);
+            var credit = entry.Lines.Sum(line => line.Credit);
+            if (debit <= 0 || Math.Abs(debit - credit) > 0.001m)
+            {
+                return "Journal entry debits and credits must be equal and greater than zero.";
+            }
+
+            var ledgerCodes = entry.Lines.Select(line => line.LedgerCode).Distinct().ToList();
+            var existingLedgerCodes = await _context.Ledgers
+                .Where(ledger => ledger.CompanyId == entry.CompanyId || ledger.CompanyId == "ggms-oman")
+                .Where(ledger => ledgerCodes.Contains(ledger.Code))
+                .Select(ledger => ledger.Code)
+                .Distinct()
+                .ToListAsync();
+            if (existingLedgerCodes.Count != ledgerCodes.Count)
+            {
+                return "Every journal line must reference an existing ledger for this company.";
+            }
+
+            return null;
         }
     }
 }

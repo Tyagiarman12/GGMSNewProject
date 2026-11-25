@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { apiFetch } from "../../lib/api";
+import { printDocument } from "../../lib/print-document";
 import { Badge } from "../../components/ui/badge";
 import type { Company } from "../../data/mock";
 import { money } from "../../lib/utils";
@@ -9,7 +10,12 @@ import { SectionTitle, ConfirmDeleteModal } from "../../modules/shared/screen-ki
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import type { ProductGroupItem, UomItem } from "../shared/domain";
-import { UniversalProductSearch, UniversalCustomerSearch, UniversalUserSearch } from "../../components/ui/universal-search";
+import {
+  SearchableSelect,
+  UniversalProductSearch,
+  UniversalCustomerSearch,
+  UniversalUserSearch
+} from "../../components/ui/universal-search";
 import {
   X,
   Loader2,
@@ -1190,26 +1196,28 @@ export function QuotationsPage({ activeCompany, onConvertToInvoice, onCreatePurc
                       </div>
                       <div>
                         <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1.5">UOM</label>
-                        <select
+                        <SearchableSelect
                           value={itemUom}
-                          onChange={(e) => setItemUom(e.target.value)}
-                          className="block w-full h-10 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all font-semibold"
-                        >
-                          <option value="Pcs">Pcs</option>
-                          <option value="pcs">pcs</option>
-                          <option value="Meter">Meter</option>
-                          <option value="mtr">mtr</option>
-                          <option value="Box">Box</option>
-                          <option value="box">box</option>
-                          <option value="Kg">Kg</option>
-                          <option value="Set">Set</option>
-                          <option value="Roll">Roll</option>
-                          <option value="job">job</option>
-                          <option value="pack">pack</option>
-                          {itemUom && !["Pcs", "pcs", "Meter", "mtr", "Box", "box", "Kg", "Set", "Roll", "job", "pack"].includes(itemUom) && (
-                            <option value={itemUom}>{itemUom}</option>
-                          )}
-                        </select>
+                          onChange={setItemUom}
+                          ariaLabel="Unit of measurement"
+                          className="font-semibold"
+                          options={[
+                            { value: "Pcs", label: "Pcs" },
+                            { value: "pcs", label: "pcs" },
+                            { value: "Meter", label: "Meter" },
+                            { value: "mtr", label: "mtr" },
+                            { value: "Box", label: "Box" },
+                            { value: "box", label: "box" },
+                            { value: "Kg", label: "Kg" },
+                            { value: "Set", label: "Set" },
+                            { value: "Roll", label: "Roll" },
+                            { value: "job", label: "job" },
+                            { value: "pack", label: "pack" },
+                            ...(itemUom && !["Pcs", "pcs", "Meter", "mtr", "Box", "box", "Kg", "Set", "Roll", "job", "pack"].includes(itemUom)
+                              ? [{ value: itemUom, label: itemUom }]
+                              : [])
+                          ]}
+                        />
                       </div>
                       <div>
                         <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1.5 font-sans">Rate (OMR)</label>
@@ -1714,7 +1722,6 @@ export function QuotationsPage({ activeCompany, onConvertToInvoice, onCreatePurc
       {/* --- Quick Add Client Modal */}
       {isClientModalOpen && (
         <div
-          onClick={(e) => { if (e.target === e.currentTarget) setIsClientModalOpen(false); }}
           className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 backdrop-blur-md p-4 animate-fade-in"
         >
           <div className="relative bg-white rounded-3xl border border-slate-100 shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col animate-scale-up">
@@ -1905,7 +1912,6 @@ export function QuotationsPage({ activeCompany, onConvertToInvoice, onCreatePurc
       {/* --- Quick Add Product Modal --- */}
       {isProductModalOpen && (
         <div
-          onClick={(e) => { if (e.target === e.currentTarget) setIsProductModalOpen(false); }}
           className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-955/60 backdrop-blur-md p-4 animate-fade-in"
         >
           <div className="relative bg-white rounded-3xl border border-slate-100 shadow-2xl max-w-lg w-full p-6 space-y-4 animate-scale-up max-h-[90vh] overflow-y-auto">
@@ -1966,45 +1972,42 @@ export function QuotationsPage({ activeCompany, onConvertToInvoice, onCreatePurc
                   <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-600 mb-1">
                     Product Group <span className="text-rose-500">*</span>
                   </label>
-                  <select
+                  <SearchableSelect
                     required
                     value={newProductGroupId}
-                    onChange={(e) => handleQuickProductGroupChange(e.target.value)}
-                    className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition cursor-pointer"
-                  >
-                    <option value="">Select Product Group...</option>
-                    {productGroups.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.name} ({g.vatPercentage}% VAT)
-                      </option>
-                    ))}
-                  </select>
+                    onChange={handleQuickProductGroupChange}
+                    ariaLabel="Product group"
+                    placeholder="Select Product Group..."
+                    className="font-bold"
+                    options={productGroups.map((g) => ({
+                      value: String(g.id),
+                      label: `${g.name} (${g.vatPercentage}% VAT)`
+                    }))}
+                  />
                 </div>
 
                 <div>
                   <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-600 mb-1">
                     UOM (Unit of Measurement) <span className="text-rose-500">*</span>
                   </label>
-                  <select
+                  <SearchableSelect
                     required
                     value={newProductUom}
-                    onChange={(e) => setNewProductUom(e.target.value)}
-                    className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition cursor-pointer"
-                  >
-                    <option value="">Select UOM...</option>
-                    {uomMasterList.map((u) => (
-                      <option key={u.id} value={u.name}>
-                        {u.name} - {u.description || u.name}
-                      </option>
-                    ))}
-                    {uomMasterList.length === 0 && (
-                      <>
-                        <option value="Pcs">Pcs</option>
-                        <option value="Meter">Meter</option>
-                        <option value="Box">Box</option>
-                      </>
-                    )}
-                  </select>
+                    onChange={setNewProductUom}
+                    ariaLabel="Unit of measurement"
+                    placeholder="Select UOM..."
+                    className="font-bold"
+                    options={uomMasterList.length > 0
+                      ? uomMasterList.map((u) => ({
+                        value: u.name,
+                        label: `${u.name} - ${u.description || u.name}`
+                      }))
+                      : [
+                        { value: "Pcs", label: "Pcs" },
+                        { value: "Meter", label: "Meter" },
+                        { value: "Box", label: "Box" }
+                      ]}
+                  />
                 </div>
 
                 <div>
@@ -2112,9 +2115,9 @@ export function QuotationsPage({ activeCompany, onConvertToInvoice, onCreatePurc
       {printQuote && (
         <div
           onClick={(e) => { if (e.target === e.currentTarget) setPrintQuote(null); }}
-          className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/60 backdrop-blur-md p-4 overflow-y-auto print:p-0 print:bg-white print:static animate-fade-in"
+          className="quotation-print-document fixed inset-0 z-50 flex items-start justify-center bg-slate-950/60 backdrop-blur-md p-4 overflow-y-auto print:p-0 print:bg-white print:static animate-fade-in"
         >
-          <div className="relative bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-4xl w-full p-8 space-y-6 print:border-none print:shadow-none print:p-0 my-6 print:my-0 text-slate-900">
+          <div className="print-document-card relative bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-4xl w-full p-8 space-y-6 print:border-none print:shadow-none print:p-0 my-6 print:my-0 text-slate-900">
             {/* Header (hidden on print) */}
             <div className="flex justify-between items-center border-b border-slate-200 pb-4 print:hidden">
               <div className="flex items-center gap-3">
@@ -2133,7 +2136,7 @@ export function QuotationsPage({ activeCompany, onConvertToInvoice, onCreatePurc
               <div className="flex items-center gap-3">
                 <Button
                   variant="primary"
-                  onClick={() => window.print()}
+                  onClick={() => printDocument(".quotation-print-document")}
                   className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-10 px-4 rounded-xl flex items-center gap-1.5 shadow-md shadow-blue-500/10"
                 >
                   <Printer className="h-4 w-4" /> Print Sheet
@@ -2149,7 +2152,7 @@ export function QuotationsPage({ activeCompany, onConvertToInvoice, onCreatePurc
             </div>
 
             {/* Printable Document Body */}
-            <div className="p-6 bg-white text-slate-900 font-sans space-y-6 print:p-0 print:shadow-none">
+            <div className="print-document-body p-6 bg-white text-slate-900 font-sans space-y-6 print:p-0 print:shadow-none">
               
               {/* Header Section */}
               <div className="flex items-start justify-between border-b-2 border-slate-900 pb-5 gap-6">
@@ -2230,7 +2233,7 @@ export function QuotationsPage({ activeCompany, onConvertToInvoice, onCreatePurc
                 const paymentTermVal = printQuote.paymentTerms || clientMatch?.paymentTerms || "CHEQUE";
 
                 return (
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                  <div className="print-document-customer-grid grid grid-cols-1 md:grid-cols-12 gap-4">
                     {/* Customer Box */}
                     <div className="md:col-span-7 rounded-xl border border-slate-300 bg-slate-50/50 p-4 space-y-2 text-xs">
                       <div className="text-xs font-black uppercase text-slate-900 tracking-wider border-b border-slate-200 pb-1.5 flex items-center justify-between">
@@ -2321,7 +2324,7 @@ export function QuotationsPage({ activeCompany, onConvertToInvoice, onCreatePurc
                     </div>
 
                     {/* Summary Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <div className="print-document-summary-grid grid grid-cols-1 md:grid-cols-12 gap-4">
                       {/* Amount In Words Box */}
                       <div className="md:col-span-7 rounded-xl border border-slate-300 bg-slate-50/60 p-4 flex flex-col justify-between text-xs space-y-3">
                         <div>
@@ -2370,7 +2373,7 @@ export function QuotationsPage({ activeCompany, onConvertToInvoice, onCreatePurc
               </div>
 
               {/* Signatures Row */}
-              <div className="pt-6 grid grid-cols-2 text-xs font-semibold text-slate-900 gap-8">
+              <div className="print-document-signatures pt-6 grid grid-cols-2 text-xs font-semibold text-slate-900 gap-8">
                 <div className="space-y-12">
                   <p className="font-bold">Customer Acceptance Signature:</p>
                   <div className="border-b border-slate-400 w-48" />
@@ -2383,7 +2386,7 @@ export function QuotationsPage({ activeCompany, onConvertToInvoice, onCreatePurc
               </div>
 
               {/* Document Footer */}
-              <div className="pt-6 border-t border-slate-300 text-center text-[10px] font-semibold text-slate-600 space-y-1">
+              <div className="print-document-footer pt-6 border-t border-slate-300 text-center text-[10px] font-semibold text-slate-600 space-y-1">
                 <p className="font-bold uppercase tracking-wider text-slate-900">{activeCompany.name} • {activeCompany.address || "Sultanate of Oman"}</p>
                 <p className="flex justify-center items-center gap-4 text-slate-500">
                   {activeCompany.contactNo && <span>Tel: {activeCompany.contactNo}</span>}
@@ -2405,7 +2408,7 @@ export function QuotationsPage({ activeCompany, onConvertToInvoice, onCreatePurc
               </Button>
               <Button
                 variant="primary"
-                onClick={() => window.print()}
+                onClick={() => printDocument(".quotation-print-document")}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-10 px-4 rounded-xl flex items-center gap-1.5 shadow-md shadow-blue-500/10"
               >
                 <Printer className="h-4 w-4" /> Print Quotation PDF

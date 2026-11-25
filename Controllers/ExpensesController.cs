@@ -34,11 +34,26 @@ namespace GGMSNEWPROJECT.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateExpense([FromBody] Expense expense)
         {
+            if (string.IsNullOrWhiteSpace(expense.Category))
+            {
+                return BadRequest("Expense category is required.");
+            }
+            if (expense.Amount <= 0 || expense.Vat < 0 || expense.Vat > expense.Amount)
+            {
+                return BadRequest("Expense total must be positive and VAT must be between zero and the total.");
+            }
             if (string.IsNullOrEmpty(expense.Id))
             {
-                expense.Id = $"EXP-{Guid.NewGuid().ToString().Substring(0, 4).ToUpper()}";
+                expense.Id = $"EXP-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
             }
-            expense.CompanyId = "ggms-oman";
+            if (string.IsNullOrWhiteSpace(expense.CompanyId))
+            {
+                expense.CompanyId = _context.CurrentCompanyId;
+            }
+            if (_context.CurrentCompanyId != "all" && expense.CompanyId != _context.CurrentCompanyId)
+            {
+                return BadRequest("Expense does not belong to the selected company.");
+            }
             expense.Status = "Pending";
 
             _context.Expenses.Add(expense);
@@ -46,11 +61,61 @@ namespace GGMSNEWPROJECT.Controllers
             _context.TimelineEvents.Add(new TimelineEvent
             {
                 Timestamp = DateTime.Now,
-                Message = $"Expense submitted: {expense.Category} of {expense.Amount} OMR for project {expense.Project}"
+                CompanyId = expense.CompanyId,
+                Message = $"Expense submitted: {expense.Category} for project {expense.Project}"
             });
 
             await _context.SaveChangesAsync();
             return Ok(expense);
+        }
+
+        [HttpPut("{id}/status")]
+        public async Task<IActionResult> UpdateStatus(string id, [FromBody] string status)
+        {
+            var expense = await _context.Expenses.FirstOrDefaultAsync(item => item.Id == id);
+            if (expense == null)
+            {
+                return NotFound(new { message = $"Expense {id} was not found." });
+            }
+
+            var normalizedStatus = status?.Trim();
+            var canTransition = (expense.Status == "Pending" && (normalizedStatus == "Approved" || normalizedStatus == "Rejected"))
+                || (expense.Status == "Approved" && normalizedStatus == "Posted");
+            if (!canTransition)
+            {
+                return BadRequest($"Expense cannot transition from {expense.Status} to {normalizedStatus ?? "an empty status"}.");
+            }
+
+            expense.Status = normalizedStatus!;
+            _context.TimelineEvents.Add(new TimelineEvent
+            {
+                Timestamp = DateTime.Now,
+                CompanyId = expense.CompanyId,
+                Message = $"Expense {expense.Id} was {normalizedStatus!.ToLowerInvariant()}."
+            });
+            await _context.SaveChangesAsync();
+            return Ok(expense);
+        }
+
+        [HttpPost("receipt")]
+        public async Task<IActionResult> UploadReceipt([FromForm] IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest("Choose a receipt file.");
+            }
+            if (file.Length > 10 * 1024 * 1024)
+            {
+                return BadRequest("Receipt files must be 10 MB or smaller.");
+            }
+            if (file.ContentType is not ("application/pdf" or "image/jpeg" or "image/png"))
+            {
+                return BadRequest("Receipt must be a PDF, JPEG, or PNG file.");
+            }
+
+            await using var stream = file.OpenReadStream();
+            var receiptUrl = await _blobService.UploadBlobAsync(stream, file.FileName, file.ContentType);
+            return Ok(new { receiptUrl });
         }
 
         [HttpPost("scan")]
@@ -59,6 +124,14 @@ namespace GGMSNEWPROJECT.Controllers
             if (file == null || file.Length == 0)
             {
                 return BadRequest("No file uploaded");
+            }
+            if (file.Length > 10 * 1024 * 1024)
+            {
+                return BadRequest("Bill files must be 10 MB or smaller.");
+            }
+            if (file.ContentType is not ("application/pdf" or "image/jpeg" or "image/png"))
+            {
+                return BadRequest("Bill must be a PDF, JPEG, or PNG file.");
             }
 
             try
@@ -70,54 +143,18 @@ namespace GGMSNEWPROJECT.Controllers
                     fileUrl = await _blobService.UploadBlobAsync(stream, file.FileName, file.ContentType);
                 }
 
-                // 2. Perform OCR scan simulation
+                // This provider currently returns sample data. The scan endpoint only previews;
+                // reviewed values are persisted through the bill confirmation endpoint.
                 VatScanResult scanResult;
                 using (var stream = file.OpenReadStream())
                 {
                     scanResult = await _vatScannerService.ScanBillAsync(stream, file.FileName);
                 }
 
-                // 3. Create a pending expense record in the database representing this scan
-                var expense = new Expense
-                {
-                    Id = $"EXP-{Guid.NewGuid().ToString().Substring(0, 4).ToUpper()}",
-                    Date = DateTime.Now.ToString("yyyy-MM-dd"),
-                    CompanyId = "ggms-oman",
-                    Category = scanResult.Category,
-                    Amount = scanResult.TotalAmount,
-                    Vat = scanResult.VatAmount,
-                    Status = "Pending",
-                    Receipt = true,
-                    ReceiptUrl = fileUrl,
-                    Project = "General / Pending classification"
-                };
-
-                _context.Expenses.Add(expense);
-
-                // Add corresponding bill to payables
-                var bill = new Bill
-                {
-                    Id = $"BILL-{Guid.NewGuid().ToString().Substring(0, 3).ToUpper()}",
-                    Supplier = scanResult.SupplierName,
-                    Amount = scanResult.TotalAmount,
-                    Due = DateTime.Now.AddDays(14).ToString("yyyy-MM-dd"),
-                    Status = "To Pay"
-                };
-                _context.Bills.Add(bill);
-
-                _context.TimelineEvents.Add(new TimelineEvent
-                {
-                    Timestamp = DateTime.Now,
-                    Message = $"AI Scanner uploaded bill from {scanResult.SupplierName} with {scanResult.Confidence}% confidence."
-                });
-
-                await _context.SaveChangesAsync();
-
                 return Ok(new
                 {
                     scanResult,
-                    receiptUrl = fileUrl,
-                    expenseId = expense.Id
+                    receiptUrl = fileUrl
                 });
             }
             catch (Exception ex)
